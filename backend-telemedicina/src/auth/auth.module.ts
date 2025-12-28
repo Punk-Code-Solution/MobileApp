@@ -1,0 +1,24 @@
+// src/auth/auth.module.ts
+import { Module } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { UsersModule } from '../users/users.module';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from './jwt.strategy'; // <--- IMPORTANTE: Importar o arquivo criado acima
+
+@Module({
+  imports: [
+    UsersModule,
+    PassportModule,
+    JwtModule.register({
+      secret: 'SEGREDO_SUPER_SECRETO', // A mesma chave da estratégia
+      signOptions: { expiresIn: '1d' },
+    }),
+  ],
+  controllers: [AuthController],
+  // O ERRO ESTAVA AQUI: Faltava o JwtStrategy nos providers
+  providers: [AuthService, JwtStrategy], 
+  exports: [AuthService],
+})
+export class AuthModule {}
