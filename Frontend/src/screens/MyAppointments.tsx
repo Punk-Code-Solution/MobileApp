@@ -12,12 +12,10 @@ import {
   StatusBar,
   SafeAreaView,
 } from 'react-native';
-import axios from 'axios';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
-
-const API_URL = 'http://10.0.2.2:3000';
+import { appointmentService } from '../services/api/appointment.service';
 
 interface MyAppointmentsProps {
   token: string;
@@ -53,14 +51,13 @@ export default function MyAppointments({ token, onBack, onNavigateToChat }: MyAp
 
   const fetchAppointments = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/appointments/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setAppointments(response.data);
+      const data = await appointmentService.getMyAppointments(token);
+      // Garantir que sempre seja um array
+      setAppointments(Array.isArray(data) ? data : []);
     } catch (error: any) {
       console.error('Erro ao buscar agendamentos:', error);
+      // Em caso de erro, definir como array vazio para evitar erros
+      setAppointments([]);
       if (!error.response) {
         console.log('Erro de rede ao carregar agendamentos');
         return;
@@ -84,7 +81,8 @@ export default function MyAppointments({ token, onBack, onNavigateToChat }: MyAp
   }, [fetchAppointments]);
 
   // Filtrar consultas baseado na tab ativa
-  const filteredAppointments = appointments.filter((appointment) => {
+  // Garantir que appointments seja sempre um array antes de usar filter
+  const filteredAppointments = (Array.isArray(appointments) ? appointments : []).filter((appointment) => {
     const now = new Date();
     const appointmentDate = new Date(appointment.scheduledAt);
     const isCompleted = appointment.status === 'COMPLETED';
