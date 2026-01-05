@@ -14,8 +14,9 @@ async function createApp(): Promise<Express> {
     return cachedApp;
   }
 
-  const expressApp = express();
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
+  try {
+    const expressApp = express();
+    const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
   // Habilitar validação global de DTOs
   app.useGlobalPipes(
@@ -50,13 +51,37 @@ async function createApp(): Promise<Express> {
     allowedHeaders: appConfig.cors.allowedHeaders,
   });
 
-  await app.init();
-  cachedApp = expressApp;
-  return expressApp;
+    await app.init();
+    cachedApp = expressApp;
+    return expressApp;
+  } catch (error) {
+    console.error('Error creating NestJS app:', error);
+    throw error;
+  }
 }
 
 export default async function handler(req: Request, res: Response) {
-  const app = await createApp();
-  return app(req, res);
+  try {
+    // Verificar variáveis de ambiente críticas
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL is not set');
+      return res.status(500).json({
+        error: 'Configuration Error',
+        message: 'DATABASE_URL environment variable is missing',
+      });
+    }
+
+    const app = await createApp();
+    app(req, res);
+  } catch (error) {
+    console.error('Error in serverless function:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined,
+      });
+    }
+  }
 }
 
