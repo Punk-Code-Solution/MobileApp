@@ -1,3 +1,80 @@
+// ============================================
+// PATCH AGRESSIVO PARA app.router DEPRECATED
+// ============================================
+// Múltiplas abordagens para garantir que funcione em todos os ambientes
+
+// Abordagem 1: Modificar diretamente o Application.prototype
+try {
+  const expressAppModule = require('express/lib/application');
+  if (expressAppModule?.prototype) {
+    const originalGet = expressAppModule.prototype.get;
+    expressAppModule.prototype.get = function(key: string) {
+      if (key === 'router') {
+        return { stack: [] };
+      }
+      try {
+        return originalGet.call(this, key);
+      } catch (error: any) {
+        if (error?.message?.includes('app.router') || error?.message?.includes('deprecated')) {
+          return { stack: [] };
+        }
+        throw error;
+      }
+    };
+  }
+} catch (e) {
+  // Ignorar se não conseguir modificar
+}
+
+// Abordagem 2: Modificar via require.cache
+try {
+  const expressPath = require.resolve('express/lib/application');
+  if (require.cache[expressPath]?.exports?.prototype) {
+    const Application = require.cache[expressPath].exports;
+    const originalGet2 = Application.prototype.get;
+    Application.prototype.get = function(key: string) {
+      if (key === 'router') {
+        return { stack: [] };
+      }
+      try {
+        return originalGet2.call(this, key);
+      } catch (error: any) {
+        if (error?.message?.includes('app.router') || error?.message?.includes('deprecated')) {
+          return { stack: [] };
+        }
+        throw error;
+      }
+    };
+  }
+} catch (e) {
+  // Ignorar se não conseguir modificar
+}
+
+// Abordagem 3: Patch via instância temporária (fallback)
+try {
+  const tempExpress = require('express');
+  const tempApp = tempExpress();
+  const proto = Object.getPrototypeOf(tempApp);
+  if (proto && !proto.get.toString().includes('router')) {
+    const originalGet3 = proto.get;
+    proto.get = function(key: string) {
+      if (key === 'router') {
+        return { stack: [] };
+      }
+      try {
+        return originalGet3.call(this, key);
+      } catch (error: any) {
+        if (error?.message?.includes('app.router') || error?.message?.includes('deprecated')) {
+          return { stack: [] };
+        }
+        throw error;
+      }
+    };
+  }
+} catch (e) {
+  // Ignorar se não conseguir modificar
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module';
@@ -6,37 +83,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { appConfig } from '../src/config/app.config';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
-
-// Patch do Express ANTES de criar qualquer instância
-// Isso intercepta o acesso a app.router antes que o erro seja lançado
-// Criar uma instância temporária para acessar o prototype
-const tempApp = express();
-const ApplicationPrototype = Object.getPrototypeOf(tempApp);
-
-// Salvar o método original
-const originalGet = ApplicationPrototype.get;
-
-// Sobrescrever o método get no prototype do Express
-ApplicationPrototype.get = function(key: string) {
-  if (key === 'router') {
-    // Retornar um objeto mock que o ExpressAdapter espera
-    return {
-      stack: [],
-    };
-  }
-  // Para outras chaves, usar o método original
-  try {
-    return originalGet.call(this, key);
-  } catch (error: any) {
-    // Se for erro sobre router deprecated, retornar mock
-    if (error && error.message && typeof error.message === 'string' && error.message.includes('app.router')) {
-      return {
-        stack: [],
-      };
-    }
-    throw error;
-  }
-};
 
 let cachedApp: express.Express;
 
