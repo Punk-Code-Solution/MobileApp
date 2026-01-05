@@ -102,7 +102,12 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
         <StatusBar barStyle="light-content" />
         {/* Header com botão de voltar */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={styles.backButton}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Cadastro</Text>
