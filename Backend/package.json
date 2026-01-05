@@ -7,7 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "npx nest build",
-    "build:vercel": "npx prisma generate --schema=./prisma/schema.prisma && npx nest build",
+    "postinstall": "npx prisma generate --schema=./prisma/schema.prisma || true",
+    "build:vercel": "nest build || npx nest build || node node_modules/@nestjs/cli/bin/nest.js build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
