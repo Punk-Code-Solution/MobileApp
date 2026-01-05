@@ -6,12 +6,15 @@
 import { Platform } from 'react-native';
 
 // Detecção automática do ambiente
-// Para Emulador Android: 10.0.2.2
-// Para iOS Simulator: localhost
-// Para Dispositivo Físico: Use o IP da sua máquina na rede local
-// Exemplo: 'http://192.168.1.100:3000'
-// Para descobrir seu IP no Windows: ipconfig
-// Para descobrir seu IP no Linux/Mac: ifconfig ou ip addr
+// 
+// DESENVOLVIMENTO:
+// - Emulador Android: 10.0.2.2
+// - iOS Simulator: localhost
+// - Dispositivo Físico: Use o IP da sua máquina na rede local
+//   Para descobrir: ipconfig (Windows) ou ifconfig (Linux/Mac)
+//
+// PRODUÇÃO:
+// - Backend na Vercel: https://mobile-app-xi-five.vercel.app
 
 const getApiBaseUrl = (): string => {
   // Se estiver em desenvolvimento
@@ -38,8 +41,8 @@ const getApiBaseUrl = (): string => {
     }
   }
   
-  // Produção ou fallback
-  return 'https://api.seudominio.com'; // Substitua pela URL de produção
+  // Produção - Backend na Vercel
+  return 'https://mobile-app-xi-five.vercel.app';
 };
 
 // IMPORTANTE: Se estiver usando DISPOSITIVO FÍSICO, altere manualmente:

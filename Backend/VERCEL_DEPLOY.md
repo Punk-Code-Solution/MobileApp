@@ -30,6 +30,7 @@ PORT=3000
 NODE_ENV="production"
 
 # CORS (opcional - URLs permitidas separadas por vírgula)
+# Para apps mobile, não é necessário configurar, pois apps não têm origin
 ALLOWED_ORIGINS="https://seu-frontend.vercel.app,https://outro-dominio.com"
 ```
 
@@ -97,9 +98,11 @@ vercel --prod
 Após o deploy, você pode testar a API:
 
 ```bash
-# Substitua pela URL fornecida pela Vercel
-curl https://seu-projeto.vercel.app/api/auth/login
+# URL do backend em produção
+curl https://mobile-app-xi-five.vercel.app/api/auth/login
 ```
+
+**URL do Backend em Produção:** `https://mobile-app-xi-five.vercel.app`
 
 ## ⚠️ Problemas Comuns
 
