@@ -478,7 +478,7 @@ Query: {
 ### Backend (NestJS)
 
 ```
-backend-telemedicina/src/
+Back-End/src/
 ├── appointments/
 │   ├── appointments.module.ts
 │   ├── appointments.service.ts
@@ -505,7 +505,7 @@ backend-telemedicina/src/
 ### Mobile (React Native)
 
 ```
-MobileTelemedicina/src/
+Front-End/src/
 ├── screens/
 │   ├── DoctorsList.tsx  (já existe)
 │   └── AppointmentBooking.tsx  ← NOVO: Tela/Modal de agendamento

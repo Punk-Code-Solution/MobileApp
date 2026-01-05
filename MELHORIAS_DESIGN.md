@@ -18,7 +18,7 @@ Foram aplicadas melhorias significativas no design do sistema, seguindo rigorosa
 - Divisor visual melhorado ("ou")
 - Espaçamentos e tipografia aprimorados
 
-**Arquivo:** `MobileTelemedicina/App.tsx`
+**Arquivo:** `Front-End/App.tsx`
 
 ---
 
@@ -43,9 +43,9 @@ Foram aplicadas melhorias significativas no design do sistema, seguindo rigorosa
 - Cores e bordas consistentes
 
 **Arquivos:** 
-- `MobileTelemedicina/src/components/Button.tsx`
-- `MobileTelemedicina/src/components/Card.tsx`
-- `MobileTelemedicina/src/components/Badge.tsx`
+- `Front-End/src/components/Button.tsx`
+- `Front-End/src/components/Card.tsx`
+- `Front-End/src/components/Badge.tsx`
 
 ---
 
@@ -62,7 +62,7 @@ Foram aplicadas melhorias significativas no design do sistema, seguindo rigorosa
 - Campo de busca visual melhorado
 - Header com ícone de configurações
 
-**Arquivo:** `MobileTelemedicina/src/DoctorsList.tsx`
+**Arquivo:** `Front-End/src/DoctorsList.tsx`
 
 ---
 
@@ -77,7 +77,7 @@ Foram aplicadas melhorias significativas no design do sistema, seguindo rigorosa
 - Resumo do agendamento com card destacado
 - Espaçamentos e hierarquia visual melhorados
 
-**Arquivo:** `MobileTelemedicina/src/screens/AppointmentBooking.tsx`
+**Arquivo:** `Front-End/src/screens/AppointmentBooking.tsx`
 
 ---
 
@@ -89,7 +89,7 @@ Foram aplicadas melhorias significativas no design do sistema, seguindo rigorosa
 - Separação clara entre área clicável e botão cancelar
 - Design mais limpo e organizado
 
-**Arquivo:** `MobileTelemedicina/src/screens/MyAppointments.tsx`
+**Arquivo:** `Front-End/src/screens/MyAppointments.tsx`
 
 ---
 
@@ -103,7 +103,7 @@ Foram aplicadas melhorias significativas no design do sistema, seguindo rigorosa
 - Cards de informação com sombras consistentes
 - Espaçamentos e padding melhorados
 
-**Arquivo:** `MobileTelemedicina/src/screens/AppointmentDetails.tsx`
+**Arquivo:** `Front-End/src/screens/AppointmentDetails.tsx`
 
 ---
 

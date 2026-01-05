@@ -11,8 +11,8 @@ Esta análise identifica **problemas críticos, médios e menores** no sistema d
 ### 1. **Segurança: JWT Secret Hardcoded**
 
 **Localização:**
-- `backend-telemedicina/src/auth/jwt.strategy.ts:14`
-- `backend-telemedicina/src/auth/auth.module.ts:15`
+- `Back-End/src/auth/jwt.strategy.ts:14`
+- `Back-End/src/auth/auth.module.ts:15`
 
 **Problema:**
 ```typescript
@@ -37,7 +37,7 @@ secretOrKey: process.env.JWT_SECRET || 'fallback-dev-only',
 ### 2. **Race Condition: Double Booking**
 
 **Localização:**
-- `backend-telemedicina/src/appointments/appointments.service.ts:68-91`
+- `Back-End/src/appointments/appointments.service.ts:68-91`
 
 **Problema:**
 ```typescript
@@ -92,7 +92,7 @@ model Appointment {
 ### 3. **Conflito de Rotas: GET 'me' vs GET ':id'**
 
 **Localização:**
-- `backend-telemedicina/src/appointments/appointments.controller.ts:32-43`
+- `Back-End/src/appointments/appointments.controller.ts:32-43`
 
 **Problema:**
 ```typescript
@@ -140,7 +140,7 @@ findOne(@Param('id') id: string, ...) {
 ### 4. **UX: Botão Cancelar dentro de Card Clicável**
 
 **Localização:**
-- `MobileTelemedicina/src/screens/MyAppointments.tsx:200-270`
+- `Front-End/src/screens/MyAppointments.tsx:200-270`
 
 **Problema:**
 ```typescript
@@ -186,7 +186,7 @@ findOne(@Param('id') id: string, ...) {
 ### 5. **Validação de Role no Create**
 
 **Localização:**
-- `backend-telemedicina/src/appointments/appointments.service.ts:15`
+- `Back-End/src/appointments/appointments.service.ts:15`
 
 **Problema:**
 ```typescript
@@ -229,8 +229,8 @@ async create(createAppointmentDto: CreateAppointmentDto, userId: string, userRol
 ### 6. **Problema de Timezone nas Datas**
 
 **Localização:**
-- `backend-telemedicina/src/appointments/appointments.service.ts:19-20`
-- `MobileTelemedicina/src/screens/AppointmentBooking.tsx`
+- `Back-End/src/appointments/appointments.service.ts:19-20`
+- `Front-End/src/screens/AppointmentBooking.tsx`
 
 **Problema:**
 ```typescript
@@ -262,7 +262,7 @@ import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 ### 7. **Validação de Double Booking Incompleta**
 
 **Localização:**
-- `backend-telemedicina/src/appointments/appointments.service.ts:74-85`
+- `Back-End/src/appointments/appointments.service.ts:74-85`
 
 **Problema:**
 ```typescript
@@ -305,7 +305,7 @@ where: {
 ### 8. **Falta Validação de Status IN_PROGRESS no Cancel**
 
 **Localização:**
-- `backend-telemedicina/src/appointments/appointments.service.ts:283-292`
+- `Back-End/src/appointments/appointments.service.ts:283-292`
 
 **Problema:**
 ```typescript
@@ -337,7 +337,7 @@ if (appointment.status === 'IN_PROGRESS') {
 ### 9. **CORS Muito Permissivo**
 
 **Localização:**
-- `backend-telemedicina/src/main.ts:18`
+- `Back-End/src/main.ts:18`
 
 **Problema:**
 ```typescript
@@ -363,8 +363,8 @@ app.enableCors({
 ### 10. **Falta Tratamento de Erro de Rede no Mobile**
 
 **Localização:**
-- `MobileTelemedicina/src/screens/AppointmentBooking.tsx`
-- `MobileTelemedicina/src/screens/MyAppointments.tsx`
+- `Front-End/src/screens/AppointmentBooking.tsx`
+- `Front-End/src/screens/MyAppointments.tsx`
 
 **Problema:**
 ```typescript
