@@ -13,6 +13,8 @@
     "android:clean": "cd android && .\\gradlew clean && cd ..",
     "android:build:debug": "cd android && .\\gradlew assembleDebug && cd ..",
     "android:build:release": "cd android && .\\gradlew assembleRelease && cd ..",
+    "android:build:production": "powershell -ExecutionPolicy Bypass -File .\\build-production.ps1",
+    "android:build:production:no-device": "powershell -ExecutionPolicy Bypass -File .\\build-production.ps1 -SkipDeviceCheck",
     "clean:all": "powershell -ExecutionPolicy Bypass -File .\\limpar-tudo.ps1"
   },
   "dependencies": {

@@ -7,6 +7,37 @@ import { appConfig } from '../src/config/app.config';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 
+// Patch do Express ANTES de criar qualquer instância
+// Isso intercepta o acesso a app.router antes que o erro seja lançado
+// Criar uma instância temporária para acessar o prototype
+const tempApp = express();
+const ApplicationPrototype = Object.getPrototypeOf(tempApp);
+
+// Salvar o método original
+const originalGet = ApplicationPrototype.get;
+
+// Sobrescrever o método get no prototype do Express
+ApplicationPrototype.get = function(key: string) {
+  if (key === 'router') {
+    // Retornar um objeto mock que o ExpressAdapter espera
+    return {
+      stack: [],
+    };
+  }
+  // Para outras chaves, usar o método original
+  try {
+    return originalGet.call(this, key);
+  } catch (error: any) {
+    // Se for erro sobre router deprecated, retornar mock
+    if (error && error.message && typeof error.message === 'string' && error.message.includes('app.router')) {
+      return {
+        stack: [],
+      };
+    }
+    throw error;
+  }
+};
+
 let cachedApp: express.Express;
 
 async function createApp(): Promise<express.Express> {
@@ -16,27 +47,6 @@ async function createApp(): Promise<express.Express> {
 
   try {
     const server = express();
-    
-    // Monkey-patch para evitar erro de app.router deprecated
-    // O ExpressAdapter tenta acessar app.router que foi removido no Express 4.x
-    // Interceptar app.get() usando defineProperty para sobrescrever o método
-    const originalGet = server.get.bind(server);
-    Object.defineProperty(server, 'get', {
-      value: function(key: string) {
-        if (key === 'router') {
-          // Retornar um objeto mock que o ExpressAdapter espera
-          // O ExpressAdapter verifica se router.stack existe
-          return {
-            stack: [],
-          };
-        }
-        // Para outras chaves, usar o método original
-        return originalGet(key);
-      },
-      writable: true,
-      configurable: true,
-      enumerable: false,
-    });
 
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
       logger: false,
