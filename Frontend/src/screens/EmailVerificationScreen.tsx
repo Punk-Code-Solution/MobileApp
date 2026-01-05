@@ -41,7 +41,7 @@ export default function EmailVerificationScreen({
 
     try {
       // Simulação de verificação - substituir por chamada à API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 1500));
       onSuccess();
     } catch (error: any) {
       Alert.alert('Erro', 'Código inválido. Tente novamente.');
@@ -54,7 +54,7 @@ export default function EmailVerificationScreen({
     setResending(true);
     try {
       // Simulação de reenvio - substituir por chamada à API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
       Alert.alert('Sucesso', 'Novo código enviado para seu email');
       onResendCode?.();
     } catch (error: any) {

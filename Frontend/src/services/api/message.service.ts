@@ -12,24 +12,28 @@ export const messageService = {
    * Busca todas as conversas do usuário
    */
   async getConversations(token: string): Promise<Conversation[]> {
-    const response = await api.get<Conversation[]>(API_ENDPOINTS.MESSAGES.CONVERSATIONS, {
+    const response = await api.get<{ data: Conversation[]; statusCode: number }>(API_ENDPOINTS.MESSAGES.CONVERSATIONS, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data;
+    // O TransformInterceptor envolve a resposta em { data, statusCode }
+    const conversations = response.data.data || response.data;
+    return Array.isArray(conversations) ? conversations : [];
   },
 
   /**
    * Busca mensagens de uma conversa
    */
   async getMessages(token: string, conversationId: string): Promise<any[]> {
-    const response = await api.get(`${API_ENDPOINTS.MESSAGES.BASE}/${conversationId}`, {
+    const response = await api.get<{ data: any[]; statusCode: number }>(`${API_ENDPOINTS.MESSAGES.BASE}/${conversationId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data;
+    // O TransformInterceptor envolve a resposta em { data, statusCode }
+    const messages = response.data.data || response.data;
+    return Array.isArray(messages) ? messages : [];
   },
 
   /**

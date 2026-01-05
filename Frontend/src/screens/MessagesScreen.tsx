@@ -33,6 +33,7 @@ interface MessagesScreenProps {
     professionalAvatar?: string;
   } | null;
   onConversationOpened?: () => void;
+  onShowNotifications?: () => void;
 }
 
 // Dados mockados - substituir por chamada à API
@@ -66,7 +67,7 @@ const mockConversations: Conversation[] = [
   },
 ];
 
-export default function MessagesScreen({ token, initialConversation, onConversationOpened }: MessagesScreenProps) {
+export default function MessagesScreen({ token, initialConversation, onConversationOpened, onShowNotifications }: MessagesScreenProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -211,7 +212,11 @@ export default function MessagesScreen({ token, initialConversation, onConversat
             <Text style={styles.greeting}>Olá, Usuário!</Text>
             <Text style={styles.subtitle}>Seu histórico de mensagens</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.notificationButton} 
+            activeOpacity={0.7}
+            onPress={onShowNotifications}
+          >
             <Text style={styles.notificationIcon}>🔔</Text>
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>2</Text>

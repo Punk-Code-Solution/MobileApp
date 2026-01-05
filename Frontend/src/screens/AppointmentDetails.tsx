@@ -10,12 +10,10 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
-import axios from 'axios';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import Header from '../components/Header';
-
-const API_URL = 'http://10.0.2.2:3000';
+import { appointmentService } from '../services/api/appointment.service';
 
 interface AppointmentDetailsProps {
   appointment: Appointment;
@@ -147,15 +145,7 @@ export default function AppointmentDetails({
           onPress: async () => {
             setLoading(true);
             try {
-              await axios.patch(
-                `${API_URL}/appointments/${appointment.id}/cancel`,
-                {},
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
+              await appointmentService.cancelAppointment(token, appointment.id);
 
               Alert.alert('Sucesso', 'Consulta cancelada com sucesso.', [
                 {

@@ -21,6 +21,7 @@ interface MyAppointmentsProps {
   token: string;
   onBack?: () => void;
   onNavigateToChat?: (professionalId: string, professionalName: string, professionalAvatar?: string) => void;
+  onShowNotifications?: () => void;
 }
 
 type TabType = 'upcoming' | 'history';
@@ -42,22 +43,37 @@ const formatTime = (dateString: string): string => {
   return `${hours}:${minutes}`;
 };
 
-export default function MyAppointments({ token, onBack, onNavigateToChat }: MyAppointmentsProps) {
+export default function MyAppointments({ token, onBack, onNavigateToChat, onShowNotifications }: MyAppointmentsProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+  const [hasAppointments, setHasAppointments] = useState(false);
 
   const fetchAppointments = useCallback(async () => {
     try {
       const data = await appointmentService.getMyAppointments(token);
       // Garantir que sempre seja um array
-      setAppointments(Array.isArray(data) ? data : []);
+      const appointmentsArray = Array.isArray(data) ? data : [];
+      setAppointments(appointmentsArray);
+      
+      // Validação: Verificar se o usuário tem consultas vinculadas
+      const hasValidAppointments = appointmentsArray.length > 0 && 
+        appointmentsArray.some((apt: Appointment) => 
+          apt && apt.id && (apt.patientId || apt.professionalId)
+        );
+      setHasAppointments(hasValidAppointments);
+      
+      // Se não houver consultas válidas, exibir mensagem informativa
+      if (!hasValidAppointments && appointmentsArray.length === 0) {
+        console.log('Usuário não possui consultas cadastradas vinculadas');
+      }
     } catch (error: any) {
       console.error('Erro ao buscar agendamentos:', error);
       // Em caso de erro, definir como array vazio para evitar erros
       setAppointments([]);
+      setHasAppointments(false);
       if (!error.response) {
         console.log('Erro de rede ao carregar agendamentos');
         return;
@@ -82,21 +98,34 @@ export default function MyAppointments({ token, onBack, onNavigateToChat }: MyAp
 
   // Filtrar consultas baseado na tab ativa
   // Garantir que appointments seja sempre um array antes de usar filter
-  const filteredAppointments = (Array.isArray(appointments) ? appointments : []).filter((appointment) => {
-    const now = new Date();
-    const appointmentDate = new Date(appointment.scheduledAt);
-    const isCompleted = appointment.status === 'COMPLETED';
-    const isCanceled = appointment.status === 'CANCELED';
-    const isPast = appointmentDate < now;
+  // Validação adicional: apenas exibir consultas válidas vinculadas ao usuário
+  const filteredAppointments = (Array.isArray(appointments) ? appointments : [])
+    .filter((appointment) => {
+      // Validar se a consulta está vinculada ao usuário
+      if (!appointment || !appointment.id || (!appointment.patientId && !appointment.professionalId)) {
+        return false;
+      }
+      
+      const now = new Date();
+      const appointmentDate = new Date(appointment.scheduledAt);
+      const isCompleted = appointment.status === 'COMPLETED';
+      const isCanceled = appointment.status === 'CANCELED';
+      const isPast = appointmentDate < now;
 
-    if (activeTab === 'upcoming') {
-      return !isCompleted && !isCanceled && !isPast;
-    } else {
-      return isCompleted || isCanceled || isPast;
-    }
-  });
+      if (activeTab === 'upcoming') {
+        return !isCompleted && !isCanceled && !isPast;
+      } else {
+        return isCompleted || isCanceled || isPast;
+      }
+    });
 
   const renderAppointmentCard = ({ item }: { item: Appointment }) => {
+    // Validação: Verificar se a consulta está vinculada ao usuário
+    if (!item || !item.id || (!item.patientId && !item.professionalId)) {
+      console.warn('Consulta inválida ou não vinculada ao usuário:', item);
+      return null;
+    }
+
     const doctorName = item.professional?.fullName || 'Médico';
     const specialtyName =
       item.professional?.specialties?.[0]?.specialty?.name || 'Especialista';
@@ -168,7 +197,11 @@ export default function MyAppointments({ token, onBack, onNavigateToChat }: MyAp
             <Text style={styles.greeting}>Olá, Usuário!</Text>
             <Text style={styles.subtitle}>Verifique aqui suas consultas</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.notificationButton} 
+            activeOpacity={0.7}
+            onPress={onShowNotifications}
+          >
             <Text style={styles.notificationIcon}>🔔</Text>
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>2</Text>
@@ -212,6 +245,14 @@ export default function MyAppointments({ token, onBack, onNavigateToChat }: MyAp
       {/* Lista de Consultas */}
       <View style={styles.content}>
         <Text style={styles.title}>Minhas consultas</Text>
+        {/* Validação: Exibir mensagem se não houver consultas vinculadas */}
+        {!hasAppointments && !loading && (
+          <View style={styles.validationMessage}>
+            <Text style={styles.validationText}>
+              Você precisa ter consultas cadastradas e vinculadas à sua conta para visualizá-las aqui.
+            </Text>
+          </View>
+        )}
         <FlatList
           data={filteredAppointments}
           keyExtractor={(item) => item.id}
@@ -233,12 +274,16 @@ export default function MyAppointments({ token, onBack, onNavigateToChat }: MyAp
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>📅</Text>
               <Text style={styles.emptyTitle}>
-                {activeTab === 'upcoming'
+                {!hasAppointments
+                  ? 'Você não possui consultas cadastradas'
+                  : activeTab === 'upcoming'
                   ? 'Nenhuma consulta agendada'
                   : 'Nenhuma consulta no histórico'}
               </Text>
               <Text style={styles.emptyText}>
-                {activeTab === 'upcoming'
+                {!hasAppointments
+                  ? 'Você precisa ter consultas vinculadas à sua conta para visualizá-las aqui. Agende uma consulta primeiro.'
+                  : activeTab === 'upcoming'
                   ? 'Quando você agendar uma consulta, ela aparecerá aqui.'
                   : 'Suas consultas anteriores aparecerão aqui.'}
               </Text>
@@ -456,5 +501,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  validationMessage: {
+    backgroundColor: '#FFF3CD',
+    padding: 16,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFC107',
+  },
+  validationText: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
   },
 });

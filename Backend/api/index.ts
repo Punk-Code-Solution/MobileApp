@@ -90,13 +90,17 @@ function readBody(req: IncomingMessage): Promise<Buffer> {
   });
 }
 
-// Helper para extrair query string da URL
-function getQueryString(url: string): string {
+// Helper para extrair query parameters da URL
+function getQueryParams(url: string): Record<string, string> {
   try {
     const urlObj = new URL(url, 'http://localhost');
-    return urlObj.search.substring(1); // Remove o '?'
+    const params: Record<string, string> = {};
+    urlObj.searchParams.forEach((value, key) => {
+      params[key] = value;
+    });
+    return params;
   } catch {
-    return '';
+    return {};
   }
 }
 
@@ -142,13 +146,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       }
     });
     
+    // Extrair path e query separadamente
+    const urlObj = new URL(url, 'http://localhost');
+    const path = urlObj.pathname;
+    const query = getQueryParams(url);
+    
     // Processar requisição usando Fastify inject
     const response = await fastifyInstance.inject({
       method,
-      url,
+      url: path,
       headers,
       payload: body,
-      query: getQueryString(url),
+      query,
     });
 
     // Preparar headers da resposta

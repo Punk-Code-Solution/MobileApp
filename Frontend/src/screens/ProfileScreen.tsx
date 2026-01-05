@@ -15,11 +15,12 @@ import ProfileOptionsScreen from './ProfileOptionsScreen';
 interface ProfileScreenProps {
   token: string;
   onLogout: () => void;
+  onShowNotifications?: () => void;
 }
 
 type ScreenState = 'profile' | 'options';
 
-export default function ProfileScreen({ token, onLogout }: ProfileScreenProps) {
+export default function ProfileScreen({ token, onLogout, onShowNotifications }: ProfileScreenProps) {
   const [screenState, setScreenState] = useState<ScreenState>('profile');
   const [userName, setUserName] = useState('Usuário');
 
@@ -56,7 +57,11 @@ export default function ProfileScreen({ token, onLogout }: ProfileScreenProps) {
               <Text style={styles.subtitle}>Este é o seu perfil</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.notificationButton} 
+            activeOpacity={0.7}
+            onPress={onShowNotifications}
+          >
             <Text style={styles.notificationIcon}>🔔</Text>
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>2</Text>

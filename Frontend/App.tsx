@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
-import { api } from './src/config/axios.config';
+import { authService } from './src/services/api/auth.service';
+import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
@@ -13,42 +14,43 @@ import EmailVerificationSuccessScreen from './src/screens/EmailVerificationSucce
 type AuthScreen = 'login' | 'register' | 'emailVerification' | 'emailVerificationSuccess' | 'forgotPassword' | 'resetPassword' | 'resetSuccess';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>('login');
   const [registerEmail, setRegisterEmail] = useState('');
 
+  // Se ainda está mostrando splash, exibir splash screen
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
   // Função para fazer Login
   const handleLogin = async (email: string, password: string, role: 'PATIENT' | 'PROFESSIONAL') => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', {
-        email: email,
-        password: password,
-      });
+      const response = await authService.login({ email, password });
 
-      console.log('Login Sucesso - Response completa:', JSON.stringify(response.data, null, 2));
+      console.log('Login Sucesso - Response completa:', JSON.stringify(response, null, 2));
       
-      // A resposta pode vir em response.data ou response.data.data
-      const responseData = response.data.data || response.data;
-      const token = responseData.access_token || responseData.accessToken;
+      // O authService já extrai os dados do TransformInterceptor
+      const token = response.access_token;
       
       console.log('Token extraído:', token ? 'Token encontrado' : 'Token NÃO encontrado');
-      console.log('Estrutura responseData:', JSON.stringify(responseData, null, 2));
       
       if (!token) {
-        console.error('Token não encontrado na resposta:', response.data);
+        console.error('Token não encontrado na resposta:', response);
         Alert.alert('Erro', 'Token de autenticação não recebido');
         return;
       }
       
       setToken(token);
-      setUserData(responseData.user || response.data.user);
+      setUserData(response.user);
       console.log('Token definido no estado, navegando para HomeScreen...');
     } catch (error: any) {
       console.error('Erro login:', error);
-      const msg = error.response?.data?.message || 'Falha ao conectar ao servidor';
+      const msg = error.response?.data?.message || error.message || 'Falha ao conectar ao servidor';
       Alert.alert('Erro', typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);

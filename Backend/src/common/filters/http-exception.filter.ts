@@ -1,11 +1,7 @@
 /**
  * Filtro global de exceções HTTP
- * Formata erros de forma consistente para o cliente
- */
-
-/**
- * Filtro global de exceções HTTP
  * Compatível com FastifyAdapter
+ * Formata erros de forma consistente para o cliente
  */
 
 import {

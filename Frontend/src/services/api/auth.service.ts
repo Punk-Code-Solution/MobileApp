@@ -12,8 +12,9 @@ export const authService = {
    * Realiza login do usuário
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials);
-    return response.data;
+    const response = await api.post<{ data: LoginResponse; statusCode: number }>(API_ENDPOINTS.AUTH.LOGIN, credentials);
+    // O TransformInterceptor envolve a resposta em { data, statusCode }
+    return response.data.data || response.data;
   },
 
   /**

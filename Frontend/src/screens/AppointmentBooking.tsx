@@ -11,11 +11,9 @@ import {
   StatusBar,
   SafeAreaView,
 } from 'react-native';
-import axios from 'axios';
 import { colors } from '../theme/colors';
 import { Professional, CreateAppointmentDto } from '../types/appointment.types';
-
-const API_URL = 'http://10.0.2.2:3000';
+import { appointmentService } from '../services/api/appointment.service';
 
 interface AppointmentBookingProps {
   professional: Professional;
@@ -119,18 +117,27 @@ export default function AppointmentBooking({
         scheduledAt: appointmentDateTime.toISOString(),
       };
 
-      const response = await axios.post(
-        `${API_URL}/appointments`,
-        appointmentData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      console.log('Enviando dados do agendamento:', JSON.stringify(appointmentData, null, 2));
 
-      console.log('Agendamento criado:', response.data);
+      const appointment = await appointmentService.createAppointment(token, appointmentData);
+
+      console.log('Agendamento criado:', JSON.stringify(appointment, null, 2));
+      
+      // Verificar se appointment é válido
+      if (!appointment || !appointment.id) {
+        console.error('Resposta inválida do servidor:', appointment);
+        Alert.alert('Erro', 'Resposta inválida do servidor. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+      
+      // Garantir que selectedDate e selectedTime existem antes de usar
+      if (!selectedDate || !selectedTime) {
+        console.error('Estado inválido: selectedDate ou selectedTime é null');
+        Alert.alert('Erro', 'Erro interno. Tente novamente.');
+        setLoading(false);
+        return;
+      }
       
       Alert.alert(
         'Sucesso! ✅',
@@ -138,12 +145,16 @@ export default function AppointmentBooking({
         [
           {
             text: 'OK',
-            onPress: onSuccess,
+            onPress: () => {
+              setLoading(false);
+              onSuccess();
+            },
           },
         ]
       );
     } catch (error: any) {
       console.error('Erro ao agendar:', error);
+      console.error('Erro completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       
       // Tratar erro de rede
       if (!error.response) {
@@ -151,16 +162,30 @@ export default function AppointmentBooking({
           'Sem Conexão',
           'Verifique sua conexão com a internet e tente novamente.'
         );
+        setLoading(false);
         return;
       }
       
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        'Não foi possível agendar a consulta. Tente novamente.';
+      // Extrair mensagem de erro
+      let errorMessage = 'Não foi possível agendar a consulta. Tente novamente.';
+      
+      try {
+        if (error.response?.data) {
+          // O TransformInterceptor envolve erros também
+          const errorData = error.response.data.data || error.response.data;
+          if (typeof errorData === 'object' && errorData !== null) {
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      } catch (parseError) {
+        console.error('Erro ao parsear mensagem de erro:', parseError);
+      }
       
       Alert.alert('Erro', errorMessage);
-    } finally {
       setLoading(false);
     }
   };

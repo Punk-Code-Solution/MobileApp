@@ -11,22 +11,21 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import axios from 'axios';
 import { colors } from '../theme/colors';
 import { Professional } from '../types/appointment.types';
 import ProfessionalDetailsScreen from './ProfessionalDetailsScreen';
 import AppointmentBooking from './AppointmentBooking';
-
-const API_URL = 'http://10.0.2.2:3000';
+import SearchScreen from './SearchScreen';
+import { professionalService } from '../services/api/professional.service';
 
 interface NewHomeScreenProps {
   token: string;
   onLogout: () => void;
 }
 
-type ScreenState = 'home' | 'details' | 'booking';
+type ScreenState = 'home' | 'details' | 'booking' | 'search';
 
-export default function NewHomeScreen({ token, onLogout }: NewHomeScreenProps) {
+export default function NewHomeScreen({ token, onLogout, onShowNotifications }: NewHomeScreenProps) {
   const [screenState, setScreenState] = useState<ScreenState>('home');
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [doctors, setDoctors] = useState<Professional[]>([]);
@@ -39,19 +38,13 @@ export default function NewHomeScreen({ token, onLogout }: NewHomeScreenProps) {
 
   const fetchDoctors = async () => {
     try {
-      const response = await axios.get(`${API_URL}/professionals`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const doctorsData = await professionalService.getAll(token);
       
       // Garantir que sempre seja um array
-      const doctorsData = Array.isArray(response.data) 
-        ? response.data 
-        : Array.isArray(response.data?.data) 
-        ? response.data.data 
-        : [];
+      const doctorsArray = Array.isArray(doctorsData) ? doctorsData : [];
       
-      console.log('Doctors recebidos:', doctorsData.length);
-      setDoctors(doctorsData);
+      console.log('Doctors recebidos:', doctorsArray.length);
+      setDoctors(doctorsArray);
     } catch (error) {
       console.error('Erro ao buscar profissionais:', error);
       setDoctors([]); // Garantir que seja um array vazio em caso de erro
@@ -84,6 +77,30 @@ export default function NewHomeScreen({ token, onLogout }: NewHomeScreenProps) {
   const handleBookingCancel = () => {
     setScreenState('details');
   };
+
+  const handleSearchPress = () => {
+    setScreenState('search');
+  };
+
+  const handleBackFromSearch = () => {
+    setScreenState('home');
+  };
+
+  const handleSelectProfessionalFromSearch = (professional: Professional) => {
+    setSelectedProfessional(professional);
+    setScreenState('details');
+  };
+
+  // Tela de busca
+  if (screenState === 'search') {
+    return (
+      <SearchScreen
+        token={token}
+        onBack={handleBackFromSearch}
+        onSelectProfessional={handleSelectProfessionalFromSearch}
+      />
+    );
+  }
 
   // Tela de detalhes
   if (screenState === 'details' && selectedProfessional) {
@@ -146,7 +163,11 @@ export default function NewHomeScreen({ token, onLogout }: NewHomeScreenProps) {
             <Text style={styles.greeting}>Olá, Usuário!</Text>
             <Text style={styles.subtitle}>Como podemos ajudar hoje?</Text>
           </View>
-          <TouchableOpacity style={styles.notificationButton} activeOpacity={0.7}>
+          <TouchableOpacity 
+            style={styles.notificationButton} 
+            activeOpacity={0.7}
+            onPress={onShowNotifications}
+          >
             <Text style={styles.notificationIcon}>🔔</Text>
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>2</Text>

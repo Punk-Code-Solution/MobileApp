@@ -10,13 +10,10 @@ import {
   Alert,
   StatusBar
 } from 'react-native';
-import axios from 'axios';
 import { colors } from './theme/colors';
 import AppointmentBooking from './screens/AppointmentBooking';
 import { Professional } from './types/appointment.types';
-
-// MANTENHA O SEU IP AQUI (Se for 10.0.2.2 ou o IP da rede)
-const API_URL = 'http://10.0.2.2:3000'; 
+import { professionalService } from './services/api/professional.service'; 
 
 interface DoctorsListProps {
   token: string;
@@ -34,10 +31,8 @@ export default function DoctorsList({ token, onLogout }: DoctorsListProps) {
 
   const fetchDoctors = async () => {
     try {
-      const response = await axios.get(`${API_URL}/professionals`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setDoctors(response.data);
+      const doctorsData = await professionalService.getAll(token);
+      setDoctors(Array.isArray(doctorsData) ? doctorsData : []);
     } catch (error) {
       // Falha silenciosa ou alerta suave
       console.log(error);

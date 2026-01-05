@@ -69,7 +69,7 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
 
     try {
       // Simulação de cadastro - substituir por chamada à API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 1500));
       
       Alert.alert('Sucesso', 'Cadastro realizado! Verifique seu email para ativar a conta.');
       onSuccess(email);

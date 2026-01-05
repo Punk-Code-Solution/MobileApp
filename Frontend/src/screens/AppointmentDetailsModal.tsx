@@ -10,11 +10,10 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import axios from 'axios';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
-
-const API_URL = 'http://10.0.2.2:3000';
+import { appointmentService } from '../services/api/appointment.service';
+import RateAppointmentScreen from './RateAppointmentScreen';
 
 interface AppointmentDetailsModalProps {
   appointment: Appointment;
@@ -41,6 +40,8 @@ const formatTime = (dateString: string): string => {
   return `${hours}:${minutes}`;
 };
 
+type ModalState = 'details' | 'rate';
+
 export default function AppointmentDetailsModal({
   appointment,
   token,
@@ -49,6 +50,7 @@ export default function AppointmentDetailsModal({
   onSendMessage,
 }: AppointmentDetailsModalProps) {
   const [loading, setLoading] = useState(false);
+  const [modalState, setModalState] = useState<ModalState>('details');
   const doctorName = appointment.professional?.fullName || 'Médico';
   const specialtyName =
     appointment.professional?.specialties?.[0]?.specialty?.name || 'Especialista';
@@ -74,15 +76,7 @@ export default function AppointmentDetailsModal({
           onPress: async () => {
             setLoading(true);
             try {
-              await axios.patch(
-                `${API_URL}/appointments/${appointment.id}/cancel`,
-                {},
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
+              await appointmentService.cancelAppointment(token, appointment.id);
               Alert.alert('Sucesso', 'Consulta cancelada com sucesso.', [
                 {
                   text: 'OK',
@@ -125,8 +119,31 @@ export default function AppointmentDetailsModal({
   };
 
   const handleRate = () => {
-    Alert.alert('Avaliar', 'Tela de avaliação será implementada em breve.');
+    setModalState('rate');
   };
+
+  const handleBackFromRate = () => {
+    setModalState('details');
+  };
+
+  const handleRateSuccess = () => {
+    setModalState('details');
+    if (onCancelSuccess) {
+      onCancelSuccess();
+    }
+  };
+
+  // Tela de avaliação
+  if (modalState === 'rate') {
+    return (
+      <RateAppointmentScreen
+        appointment={appointment}
+        token={token}
+        onBack={handleBackFromRate}
+        onSuccess={handleRateSuccess}
+      />
+    );
+  }
 
   // Obter data/hora da consulta ou do cancelamento/conclusão
   const getActionDate = () => {
