@@ -12,7 +12,7 @@ import { JwtStrategy } from './jwt.strategy'; // <--- IMPORTANTE: Importar o arq
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: 'SEGREDO_SUPER_SECRETO', // A mesma chave da estratégia
+      secret: process.env.JWT_SECRET || 'SEGREDO_SUPER_SECRETO_DEV_ONLY', // Usar variável de ambiente
       signOptions: { expiresIn: '1d' },
     }),
   ],

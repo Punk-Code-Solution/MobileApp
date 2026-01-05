@@ -9,11 +9,12 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { CurrentUser, CurrentUserPayload } from 'src/auth/decorators/current-user.decorator';
+import { CurrentUser, type CurrentUserPayload } from 'src/auth/decorators/current-user.decorator';
 
 @Controller('appointments')
 @UseGuards(AuthGuard('jwt')) // Todas as rotas deste controller requerem autenticação
@@ -26,7 +27,7 @@ export class AppointmentsController {
     @Body() createAppointmentDto: CreateAppointmentDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.appointmentsService.create(createAppointmentDto, user.userId);
+    return this.appointmentsService.create(createAppointmentDto, user.userId, user.role);
   }
 
   @Get('me')
@@ -39,6 +40,10 @@ export class AppointmentsController {
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserPayload,
   ) {
+    // Prevenir conflito: se id for 'me', retornar erro
+    if (id === 'me') {
+      throw new BadRequestException('Invalid appointment ID. Use GET /appointments/me to list your appointments.');
+    }
     return this.appointmentsService.findOne(id, user.userId, user.role);
   }
 

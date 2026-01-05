@@ -10,8 +10,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // Pega o token do cabeçalho Authorization: Bearer <token>
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // IMPORTANTE: Tem que ser a mesma chave usada no AuthModule
-      secretOrKey: 'SEGREDO_SUPER_SECRETO', 
+      // IMPORTANTE: Usar variável de ambiente para segurança
+      secretOrKey: process.env.JWT_SECRET || 'SEGREDO_SUPER_SECRETO_DEV_ONLY',
     });
   }
 

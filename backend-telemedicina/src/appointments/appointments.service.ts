@@ -12,11 +12,20 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createAppointmentDto: CreateAppointmentDto, userId: string) {
+  async create(createAppointmentDto: CreateAppointmentDto, userId: string, userRole: string) {
     const { professionalId, scheduledAt } = createAppointmentDto;
 
-    // 1. Converter scheduledAt para Date
+    // 0. Validar role primeiro (antes de fazer queries)
+    if (userRole !== 'PATIENT') {
+      throw new ForbiddenException('Apenas pacientes podem criar agendamentos.');
+    }
+
+    // 1. Converter scheduledAt para Date (normalizar para UTC)
     const appointmentDate = new Date(scheduledAt);
+    // Garantir que estamos trabalhando com UTC
+    if (isNaN(appointmentDate.getTime())) {
+      throw new BadRequestException('Data/hora inválida. Use formato ISO 8601 (ex: 2024-01-15T14:30:00Z)');
+    }
     const now = new Date();
 
     // 2. Validação: Não permitir agendamentos no passado
@@ -34,18 +43,18 @@ export class AppointmentsService {
       );
     }
 
-    // 4. Buscar o Patient pelo userId
+    // 2. Buscar o Patient pelo userId (já validamos role acima)
     const patient = await this.prisma.patient.findUnique({
       where: { userId },
     });
 
     if (!patient) {
       throw new ForbiddenException(
-        'Apenas pacientes podem criar agendamentos. Perfil de paciente não encontrado.',
+        'Perfil de paciente não encontrado. Por favor, complete seu cadastro.',
       );
     }
 
-    // 5. Verificar se o Professional existe e está ativo
+    // 3. Verificar se o Professional existe e está ativo
     const professional = await this.prisma.professional.findUnique({
       where: { id: professionalId },
       include: {
@@ -65,58 +74,79 @@ export class AppointmentsService {
       throw new BadRequestException('Profissional não está ativo no momento.');
     }
 
-    // 6. Validação: Verificar "double booking" - Não permitir dois agendamentos no mesmo horário
-    // Considerar uma janela de 30 minutos (consultas padrão)
-    const appointmentStart = new Date(appointmentDate);
-    const appointmentEnd = new Date(appointmentDate);
-    appointmentEnd.setMinutes(appointmentEnd.getMinutes() + 30); // Consulta de 30 minutos
+    // 4. Criar agendamento usando TRANSAÇÃO para prevenir race condition
+    // Dentro da transação: verificar conflito e criar atomicamente
+    const appointment = await this.prisma.$transaction(async (tx) => {
+      // 4.1. Calcular janela de tempo (30 minutos de consulta)
+      const appointmentStart = new Date(appointmentDate);
+      const appointmentEnd = new Date(appointmentDate);
+      appointmentEnd.setMinutes(appointmentEnd.getMinutes() + 30);
 
-    const conflictingAppointment = await this.prisma.appointment.findFirst({
-      where: {
-        professionalId,
-        scheduledAt: {
-          gte: appointmentStart,
-          lt: appointmentEnd,
+      // 4.2. Verificar "double booking" dentro da transação
+      // Buscar todos os appointments do profissional no intervalo de tempo
+      // (considerando que cada consulta tem 30 minutos)
+      const conflictingAppointments = await tx.appointment.findMany({
+        where: {
+          professionalId,
+          status: {
+            not: 'CANCELED', // Agendamentos cancelados não contam como conflito
+          },
+          scheduledAt: {
+            // Buscar appointments que podem sobrepor
+            // Apenas appointments que começam antes do fim do novo OU terminam depois do início do novo
+            gte: new Date(appointmentStart.getTime() - 30 * 60 * 1000), // 30min antes
+            lte: new Date(appointmentEnd.getTime() + 30 * 60 * 1000), // 30min depois
+          },
         },
-        status: {
-          not: 'CANCELED', // Agendamentos cancelados não contam como conflito
+      });
+
+      // Verificar sobreposição real (cada appointment tem 30min)
+      for (const existing of conflictingAppointments) {
+        const existingStart = new Date(existing.scheduledAt);
+        const existingEnd = new Date(existing.scheduledAt);
+        existingEnd.setMinutes(existingEnd.getMinutes() + 30);
+
+        // Verificar se há sobreposição: novo começa antes do fim do existente E novo termina depois do início do existente
+        const hasOverlap =
+          appointmentStart < existingEnd && appointmentEnd > existingStart;
+
+        if (hasOverlap) {
+          throw new BadRequestException(
+            'Este horário já está ocupado. Por favor, selecione outro horário.',
+          );
+        }
+      }
+
+      // 4.3. Criar o agendamento dentro da mesma transação
+      return await tx.appointment.create({
+        data: {
+          patientId: patient.id,
+          professionalId: professional.id,
+          scheduledAt: appointmentDate,
+          price: professional.price,
+          status: 'PENDING_PAYMENT', // Status inicial
         },
-      },
-    });
-
-    if (conflictingAppointment) {
-      throw new BadRequestException(
-        'Este horário já está ocupado. Por favor, selecione outro horário.',
-      );
-    }
-
-    // 7. Criar o agendamento usando o preço do profissional
-    const appointment = await this.prisma.appointment.create({
-      data: {
-        patientId: patient.id,
-        professionalId: professional.id,
-        scheduledAt: appointmentDate,
-        price: professional.price,
-        status: 'PENDING_PAYMENT', // Status inicial
-      },
-      include: {
-        professional: {
-          include: {
-            specialties: {
-              include: {
-                specialty: true,
+        include: {
+          professional: {
+            include: {
+              specialties: {
+                include: {
+                  specialty: true,
+                },
               },
             },
           },
-        },
-        patient: {
-          select: {
-            id: true,
-            fullName: true,
-            phone: true,
+          patient: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
           },
         },
-      },
+      });
+    }, {
+      timeout: 10000, // Timeout de 10 segundos para a transação
     });
 
     return appointment;
@@ -280,7 +310,7 @@ export class AppointmentsService {
       throw new NotFoundException('Agendamento não encontrado.');
     }
 
-    // Verificar se já está cancelado ou completado
+    // Verificar se já está cancelado, completado ou em andamento
     if (appointment.status === 'CANCELED') {
       throw new BadRequestException('Este agendamento já está cancelado.');
     }
@@ -288,6 +318,12 @@ export class AppointmentsService {
     if (appointment.status === 'COMPLETED') {
       throw new BadRequestException(
         'Não é possível cancelar uma consulta já finalizada.',
+      );
+    }
+
+    if (appointment.status === 'IN_PROGRESS') {
+      throw new BadRequestException(
+        'Não é possível cancelar uma consulta em andamento.',
       );
     }
 
@@ -300,13 +336,12 @@ export class AppointmentsService {
       const patient = await this.prisma.patient.findUnique({
         where: { userId },
       });
-      hasPermission = patient && appointment.patientId === patient.id;
+      hasPermission = !!(patient && appointment.patientId === patient.id);
     } else if (userRole === 'PROFESSIONAL') {
       const professional = await this.prisma.professional.findUnique({
         where: { userId },
       });
-      hasPermission =
-        professional && appointment.professionalId === professional.id;
+      hasPermission = !!(professional && appointment.professionalId === professional.id);
     }
 
     if (!hasPermission) {

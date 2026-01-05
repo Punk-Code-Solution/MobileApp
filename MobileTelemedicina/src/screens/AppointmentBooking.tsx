@@ -144,6 +144,16 @@ export default function AppointmentBooking({
       );
     } catch (error: any) {
       console.error('Erro ao agendar:', error);
+      
+      // Tratar erro de rede
+      if (!error.response) {
+        Alert.alert(
+          'Sem Conexão',
+          'Verifique sua conexão com a internet e tente novamente.'
+        );
+        return;
+      }
+      
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -170,19 +180,27 @@ export default function AppointmentBooking({
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <StatusBar barStyle="light-content" />
       
+      {/* Header Azul Escuro */}
+      <View style={styles.headerDark}>
+        <TouchableOpacity
+          onPress={onCancel}
+          style={styles.backButton}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.backButtonIconDark}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitleDark}>Agendamento</Text>
+        <View style={styles.headerPlaceholder} />
+      </View>
+
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header com botão voltar */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onCancel} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Voltar</Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Card do Profissional */}
         <View style={styles.professionalCard}>
@@ -192,7 +210,7 @@ export default function AppointmentBooking({
                 source={{
                   uri:
                     professional.avatarUrl ||
-                    `https://ui-avatars.com/api/?background=4C4DDC&color=fff&size=128&name=${encodeURIComponent(
+                    `https://ui-avatars.com/api/?background=90EE90&color=fff&size=128&name=${encodeURIComponent(
                       professional.fullName
                     )}`,
                 }}
@@ -201,15 +219,14 @@ export default function AppointmentBooking({
             </View>
             
             <View style={styles.professionalDetails}>
-              <Text style={styles.professionalName}>{professional.fullName}</Text>
               <Text style={styles.professionalSpecialty}>{specialtyName}</Text>
-              <Text style={styles.professionalLicense}>CRM: {professional.licenseNumber}</Text>
+              <Text style={styles.professionalName}>{professional.fullName}</Text>
+              <View style={styles.ratingContainer}>
+                <Text style={styles.star}>⭐</Text>
+                <Text style={styles.rating}>4.5 (261)</Text>
+              </View>
             </View>
           </View>
-          
-          {professional.bio && (
-            <Text style={styles.bio}>{professional.bio}</Text>
-          )}
         </View>
 
         {/* Seção de Seleção de Data */}
@@ -295,30 +312,11 @@ export default function AppointmentBooking({
           </View>
         )}
 
-        {/* Resumo do Agendamento */}
-        {selectedDate && selectedTime && (
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Resumo do Agendamento</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Data:</Text>
-              <Text style={styles.summaryValue}>
-                {formatDate(selectedDate)}
-              </Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Horário:</Text>
-              <Text style={styles.summaryValue}>{selectedTime}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Valor:</Text>
-              <Text style={styles.summaryValuePrice}>R$ {priceFormatted}</Text>
-            </View>
-          </View>
-        )}
       </ScrollView>
 
-      {/* Botão de Confirmar (Fixo no rodapé) */}
+      {/* Rodapé com Preço e Botão */}
       <View style={styles.footer}>
+        <Text style={styles.footerPrice}>R$ {priceFormatted}</Text>
         <TouchableOpacity
           style={[
             styles.confirmButton,
@@ -330,9 +328,7 @@ export default function AppointmentBooking({
           {loading ? (
             <ActivityIndicator color={colors.text.light} />
           ) : (
-            <Text style={styles.confirmButtonText}>
-              Confirmar Agendamento
-            </Text>
+            <Text style={styles.confirmButtonText}>CONFIRMAR</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -349,22 +345,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100, // Espaço para o botão fixo
+    paddingBottom: 20,
   },
   
-  // Header
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
+  // Header Escuro
+  headerDark: {
+    backgroundColor: colors.navigation.darkBlue,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 12,
   },
   backButton: {
-    alignSelf: 'flex-start',
+    padding: 8,
   },
-  backButtonText: {
-    fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
+  backButtonIconDark: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  headerTitleDark: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  headerPlaceholder: {
+    width: 40,
   },
 
   // Card do Profissional
@@ -386,45 +395,47 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: colors.primaryLight,
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: '#90EE90',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
     overflow: 'hidden',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+    width: 100,
+    height: 100,
+    borderRadius: 12,
   },
   professionalDetails: {
     flex: 1,
     justifyContent: 'center',
   },
-  professionalName: {
-    fontSize: 20,
+  professionalSpecialty: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: colors.text.primary,
     marginBottom: 4,
   },
-  professionalSpecialty: {
+  professionalName: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  star: {
     fontSize: 16,
-    color: colors.primary,
-    fontWeight: '600',
-    marginBottom: 4,
+    marginRight: 4,
   },
-  professionalLicense: {
+  rating: {
     fontSize: 14,
-    color: colors.text.secondary,
-  },
-  bio: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    lineHeight: 20,
-    marginTop: 8,
+    color: colors.text.primary,
+    fontWeight: '500',
   },
 
   // Seções
@@ -445,19 +456,29 @@ const styles = StyleSheet.create({
     paddingRight: 24,
   },
   dateCard: {
-    width: 70,
-    height: 90,
+    width: 75,
+    height: 95,
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: colors.border,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   dateCardSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    elevation: 6,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   dateWeekday: {
     fontSize: 12,
@@ -493,19 +514,30 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeSlot: {
-    minWidth: 90,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    minWidth: 95,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.border,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   timeSlotSelected: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    elevation: 4,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   timeSlotText: {
     fontSize: 14,
@@ -556,31 +588,31 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
-  // Footer (Botão Fixo)
+  // Footer (Preço e Botão)
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: colors.background,
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+  },
+  footerPrice: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text.primary,
   },
   confirmButton: {
     backgroundColor: colors.primary,
-    borderRadius: 30, // Pill shape
+    borderRadius: 12,
     paddingVertical: 16,
+    paddingHorizontal: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: 48,
   },
   confirmButtonDisabled: {
     backgroundColor: colors.text.secondary,
@@ -590,6 +622,8 @@ const styles = StyleSheet.create({
     color: colors.text.light,
     fontSize: 16,
     fontWeight: 'bold',
+    letterSpacing: 1,
   },
 });
+
 

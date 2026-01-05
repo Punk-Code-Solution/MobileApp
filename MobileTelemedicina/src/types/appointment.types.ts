@@ -27,7 +27,13 @@ export interface Appointment {
   scheduledAt: string;
   status: 'PENDING_PAYMENT' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELED';
   price: number;
+  videoRoomUrl?: string;
   createdAt: string;
   professional?: Professional;
+  patient?: {
+    id: string;
+    fullName: string;
+    phone: string;
+  };
 }
 
