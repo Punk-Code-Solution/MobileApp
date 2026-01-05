@@ -1,13 +1,17 @@
 {
   "version": 2,
   "buildCommand": "npm run build:vercel",
-  "outputDirectory": "dist",
   "installCommand": "npm install --include=dev",
-  "framework": null,
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/api"
+      "src": "api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.ts"
     }
   ]
 }
