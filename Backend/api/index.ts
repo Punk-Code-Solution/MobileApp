@@ -15,23 +15,32 @@ async function createApp(): Promise<express.Express> {
   }
 
   try {
-    // Suprimir warning sobre app.router deprecated
-    const originalWarn = console.warn;
-    console.warn = (...args: any[]) => {
-      if (args[0] && typeof args[0] === 'string' && args[0].includes('app.router')) {
-        // Suprimir apenas o warning sobre app.router
-        return;
-      }
-      originalWarn.apply(console, args);
-    };
-
     const server = express();
+    
+    // Monkey-patch para evitar erro de app.router deprecated
+    // O ExpressAdapter tenta acessar app.router que foi removido no Express 4.x
+    // Interceptar app.get() usando defineProperty para sobrescrever o método
+    const originalGet = server.get.bind(server);
+    Object.defineProperty(server, 'get', {
+      value: function(key: string) {
+        if (key === 'router') {
+          // Retornar um objeto mock que o ExpressAdapter espera
+          // O ExpressAdapter verifica se router.stack existe
+          return {
+            stack: [],
+          };
+        }
+        // Para outras chaves, usar o método original
+        return originalGet(key);
+      },
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
+
     const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
       logger: false,
     });
-
-    // Restaurar console.warn após criar o app
-    console.warn = originalWarn;
 
     // Habilitar validação global de DTOs
     app.useGlobalPipes(
