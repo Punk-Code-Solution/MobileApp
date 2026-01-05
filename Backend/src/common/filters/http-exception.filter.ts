@@ -3,6 +3,11 @@
  * Formata erros de forma consistente para o cliente
  */
 
+/**
+ * Filtro global de exceções HTTP
+ * Compatível com FastifyAdapter
+ */
+
 import {
   ExceptionFilter,
   Catch,
@@ -10,23 +15,14 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+    const response = ctx.getResponse<FastifyReply>();
     const request = ctx.getRequest();
-
-    // Ignorar erros relacionados a app.router deprecated
-    if (exception instanceof Error) {
-      const errorMessage = exception.message || '';
-      if (errorMessage.includes('app.router') || errorMessage.includes('deprecated')) {
-        // Retornar uma resposta vazia ou genérica para evitar expor o erro
-        return response.status(HttpStatus.OK).json({});
-      }
-    }
 
     const status =
       exception instanceof HttpException
@@ -41,11 +37,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: request.url || '/',
       message: typeof message === 'string' ? message : (message as any).message || message,
     };
 
-    response.status(status).json(errorResponse);
+    response.status(status).send(errorResponse);
   }
 }
 

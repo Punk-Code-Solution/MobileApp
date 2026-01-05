@@ -1,102 +1,31 @@
-// ============================================
-// PATCH AGRESSIVO PARA app.router DEPRECATED
-// ============================================
-// Múltiplas abordagens para garantir que funcione em todos os ambientes
-
-// Abordagem 1: Modificar diretamente o Application.prototype
-try {
-  const expressAppModule = require('express/lib/application');
-  if (expressAppModule?.prototype) {
-    const originalGet = expressAppModule.prototype.get;
-    expressAppModule.prototype.get = function(key: string) {
-      if (key === 'router') {
-        return { stack: [] };
-      }
-      try {
-        return originalGet.call(this, key);
-      } catch (error: any) {
-        if (error?.message?.includes('app.router') || error?.message?.includes('deprecated')) {
-          return { stack: [] };
-        }
-        throw error;
-      }
-    };
-  }
-} catch (e) {
-  // Ignorar se não conseguir modificar
-}
-
-// Abordagem 2: Modificar via require.cache
-try {
-  const expressPath = require.resolve('express/lib/application');
-  if (require.cache[expressPath]?.exports?.prototype) {
-    const Application = require.cache[expressPath].exports;
-    const originalGet2 = Application.prototype.get;
-    Application.prototype.get = function(key: string) {
-      if (key === 'router') {
-        return { stack: [] };
-      }
-      try {
-        return originalGet2.call(this, key);
-      } catch (error: any) {
-        if (error?.message?.includes('app.router') || error?.message?.includes('deprecated')) {
-          return { stack: [] };
-        }
-        throw error;
-      }
-    };
-  }
-} catch (e) {
-  // Ignorar se não conseguir modificar
-}
-
-// Abordagem 3: Patch via instância temporária (fallback)
-try {
-  const tempExpress = require('express');
-  const tempApp = tempExpress();
-  const proto = Object.getPrototypeOf(tempApp);
-  if (proto && !proto.get.toString().includes('router')) {
-    const originalGet3 = proto.get;
-    proto.get = function(key: string) {
-      if (key === 'router') {
-        return { stack: [] };
-      }
-      try {
-        return originalGet3.call(this, key);
-      } catch (error: any) {
-        if (error?.message?.includes('app.router') || error?.message?.includes('deprecated')) {
-          return { stack: [] };
-        }
-        throw error;
-      }
-    };
-  }
-} catch (e) {
-  // Ignorar se não conseguir modificar
-}
-
 import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from '../src/app.module';
-import express, { Request, Response } from 'express';
 import { ValidationPipe } from '@nestjs/common';
 import { appConfig } from '../src/config/app.config';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
+import type { IncomingMessage, ServerResponse } from 'http';
 
-let cachedApp: express.Express;
+let cachedApp: NestFastifyApplication;
 
-async function createApp(): Promise<express.Express> {
+async function createApp(): Promise<NestFastifyApplication> {
   if (cachedApp) {
     return cachedApp;
   }
 
   try {
-    const server = express();
-
-    const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
+    const adapter = new FastifyAdapter({
       logger: false,
     });
+
+    const app = await NestFactory.create<NestFastifyApplication>(
+      AppModule,
+      adapter,
+      {
+        logger: false,
+      },
+    );
 
     // Habilitar validação global de DTOs
     app.useGlobalPipes(
@@ -114,8 +43,8 @@ async function createApp(): Promise<express.Express> {
     app.useGlobalInterceptors(new TransformInterceptor());
 
     // Habilitar CORS
-    app.enableCors({
-      origin: (origin, callback) => {
+    await app.register(require('@fastify/cors'), {
+      origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
         if (appConfig.nodeEnv === 'development') {
           callback(null, true);
           return;
@@ -123,7 +52,7 @@ async function createApp(): Promise<express.Express> {
         if (!origin || appConfig.cors.allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          callback(new Error('Not allowed by CORS'));
+          callback(new Error('Not allowed by CORS'), false);
         }
       },
       credentials: appConfig.cors.credentials,
@@ -131,37 +60,118 @@ async function createApp(): Promise<express.Express> {
       allowedHeaders: appConfig.cors.allowedHeaders,
     });
 
+    // Habilitar Helmet para segurança
+    await app.register(require('@fastify/helmet'), {
+      contentSecurityPolicy: false,
+    });
+
     await app.init();
-    cachedApp = server;
-    return server;
+    await app.getHttpAdapter().getInstance().ready();
+    
+    cachedApp = app;
+    return app;
   } catch (error) {
     console.error('Error creating NestJS app:', error);
     throw error;
   }
 }
 
-export default async function handler(req: Request, res: Response) {
+// Helper para ler body do request de forma assíncrona
+function readBody(req: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+    req.on('end', () => {
+      resolve(Buffer.concat(chunks));
+    });
+    req.on('error', reject);
+  });
+}
+
+// Helper para extrair query string da URL
+function getQueryString(url: string): string {
+  try {
+    const urlObj = new URL(url, 'http://localhost');
+    return urlObj.search.substring(1); // Remove o '?'
+  } catch {
+    return '';
+  }
+}
+
+// Handler para Vercel serverless functions
+// Vercel passa Node.js Request/Response, convertemos para Fastify
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
     // Verificar variáveis de ambiente críticas
     if (!process.env.DATABASE_URL) {
       console.error('DATABASE_URL is not set');
-      return res.status(500).json({
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
         error: 'Configuration Error',
         message: 'DATABASE_URL environment variable is missing',
-      });
+      }));
+      return;
     }
 
     const app = await createApp();
-    app(req, res);
+    const fastifyInstance = app.getHttpAdapter().getInstance();
+    
+    // Converter requisição Node.js para Fastify
+    const url = req.url || '/';
+    const method = req.method || 'GET';
+    
+    // Ler body se existir (apenas para métodos que podem ter body)
+    let body: Buffer | undefined;
+    if (['POST', 'PUT', 'PATCH'].includes(method)) {
+      try {
+        body = await readBody(req);
+      } catch (error) {
+        // Se houver erro ao ler body, continuar sem body
+        console.warn('Error reading body:', error);
+      }
+    }
+    
+    // Preparar headers
+    const headers: Record<string, string> = {};
+    Object.keys(req.headers).forEach((key) => {
+      const value = req.headers[key];
+      if (value) {
+        headers[key] = Array.isArray(value) ? value.join(', ') : value;
+      }
+    });
+    
+    // Processar requisição usando Fastify inject
+    const response = await fastifyInstance.inject({
+      method,
+      url,
+      headers,
+      payload: body,
+      query: getQueryString(url),
+    });
+
+    // Preparar headers da resposta
+    const responseHeaders: Record<string, string> = {};
+    Object.keys(response.headers).forEach((key) => {
+      const value = response.headers[key];
+      if (value) {
+        responseHeaders[key] = Array.isArray(value) ? value.join(', ') : value;
+      }
+    });
+
+    // Enviar resposta
+    res.writeHead(response.statusCode, responseHeaders);
+    res.end(response.rawPayload || response.body);
   } catch (error) {
     console.error('Error in serverless function:', error);
     if (!res.headersSent) {
-      res.status(500).json({
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
         error: 'Internal Server Error',
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined,
-      });
+      }));
     }
   }
 }
-

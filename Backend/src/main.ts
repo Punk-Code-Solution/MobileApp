@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { appConfig } from './config/app.config';
@@ -6,7 +7,12 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({
+      logger: false,
+    }),
+  );
 
   // Habilitar validação global de DTOs
   app.useGlobalPipes(
@@ -24,8 +30,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // Habilitar CORS para comunicação com o app mobile
-  app.enableCors({
-    origin: (origin, callback) => {
+  await app.register(require('@fastify/cors'), {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // Em desenvolvimento, permitir todas as origens (incluindo IPs locais para dispositivos físicos)
       if (appConfig.nodeEnv === 'development') {
         callback(null, true);
@@ -36,12 +42,17 @@ async function bootstrap() {
       if (!origin || appConfig.cors.allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error('Not allowed by CORS'), false);
       }
     },
     credentials: appConfig.cors.credentials,
     methods: appConfig.cors.methods,
     allowedHeaders: appConfig.cors.allowedHeaders,
+  });
+
+  // Habilitar Helmet para segurança
+  await app.register(require('@fastify/helmet'), {
+    contentSecurityPolicy: false,
   });
 
   // A Vercel fornece a porta via process.env.PORT, mas pode ser undefined
