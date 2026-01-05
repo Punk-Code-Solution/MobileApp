@@ -44,7 +44,11 @@ async function bootstrap() {
     allowedHeaders: appConfig.cors.allowedHeaders,
   });
 
-  await app.listen(appConfig.port);
-  console.log(`🚀 Application is running on: http://localhost:${appConfig.port}`);
+  // A Vercel fornece a porta via process.env.PORT, mas pode ser undefined
+  // NestJS precisa de um número, então usamos 0 para deixar o sistema escolher
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : appConfig.port;
+  
+  await app.listen(port);
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
 }
 bootstrap();
