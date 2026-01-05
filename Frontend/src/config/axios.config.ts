@@ -33,8 +33,16 @@ api.interceptors.response.use(
       // Erro com resposta do servidor
       return Promise.reject(error);
     } else if (error.request) {
-      // Erro de rede
-      return Promise.reject(new Error('Erro de conexão. Verifique sua internet.'));
+      // Erro de rede - fornecer mais detalhes para debug
+      const baseURL = error.config?.baseURL || 'servidor';
+      const url = error.config?.url || '';
+      console.error('Erro de conexão:', {
+        baseURL,
+        url,
+        fullUrl: `${baseURL}${url}`,
+        message: error.message,
+      });
+      return Promise.reject(new Error(`Erro de conexão. Verifique se o backend está rodando em ${baseURL}`));
     } else {
       // Outro erro
       return Promise.reject(error);

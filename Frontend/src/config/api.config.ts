@@ -32,8 +32,8 @@ const getApiBaseUrl = (): string => {
       // Exemplo: 'http://192.168.1.109:3000'
       
       // ALTERE A LINHA ABAIXO CONFORME SEU AMBIENTE:
-      return 'http://192.168.1.109:3000'; // Dispositivo físico - ALTERE SE NECESSÁRIO
-      // return 'http://10.0.2.2:3000'; // Descomente esta linha se estiver usando emulador
+      // return 'http://192.168.1.109:3000'; // Dispositivo físico - Descomente se estiver usando dispositivo físico
+      return 'http://10.0.2.2:3000'; // Emulador Android - Use esta linha para emulador
     }
     // Para iOS Simulator
     if (Platform.OS === 'ios') {

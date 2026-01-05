@@ -13,30 +13,11 @@ import { colors } from '../theme/colors';
 
 interface ProfileOptionsScreenProps {
   onBack: () => void;
-  onLogout: () => void;
 }
 
 export default function ProfileOptionsScreen({
   onBack,
-  onLogout,
 }: ProfileOptionsScreenProps) {
-  const handleLogout = () => {
-    Alert.alert(
-      'Sair',
-      'Deseja realmente sair da sua conta?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Sair',
-          style: 'destructive',
-          onPress: onLogout,
-        },
-      ]
-    );
-  };
 
   const handleSettings = () => {
     Alert.alert('Configurações', 'Funcionalidade de configurações será implementada em breve.');
@@ -97,15 +78,6 @@ export default function ProfileOptionsScreen({
           activeOpacity={0.7}
         >
           <Text style={styles.optionText}>Ajuda e Suporte</Text>
-        </TouchableOpacity>
-
-        {/* Botão de Sair */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.logoutButtonText}>Sair</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -168,21 +140,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text.primary,
-  },
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 12,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    marginTop: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
 });
 

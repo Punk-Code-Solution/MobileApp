@@ -8,6 +8,7 @@ import {
   StatusBar,
   SafeAreaView,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import ProfileOptionsScreen from './ProfileOptionsScreen';
@@ -24,12 +25,29 @@ export default function ProfileScreen({ token, onLogout, onShowNotifications }: 
   const [screenState, setScreenState] = useState<ScreenState>('profile');
   const [userName, setUserName] = useState('Usuário');
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Sair',
+      'Deseja realmente sair da sua conta?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: onLogout,
+        },
+      ]
+    );
+  };
+
   // Se estiver na tela de opções, mostra ela
   if (screenState === 'options') {
     return (
       <ProfileOptionsScreen
         onBack={() => setScreenState('profile')}
-        onLogout={onLogout}
       />
     );
   }
@@ -82,6 +100,15 @@ export default function ProfileScreen({ token, onLogout, onShowNotifications }: 
           activeOpacity={0.8}
         >
           <Text style={styles.editButtonText}>EDITAR PERFIL</Text>
+        </TouchableOpacity>
+
+        {/* Botão de Sair */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.logoutButtonText}>Sair</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -184,6 +211,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 1,
+  },
+  logoutButton: {
+    width: '100%',
+    backgroundColor: '#FF3B30',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginTop: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 });
 
