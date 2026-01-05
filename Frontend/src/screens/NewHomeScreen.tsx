@@ -42,9 +42,19 @@ export default function NewHomeScreen({ token, onLogout }: NewHomeScreenProps) {
       const response = await axios.get(`${API_URL}/professionals`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setDoctors(response.data);
+      
+      // Garantir que sempre seja um array
+      const doctorsData = Array.isArray(response.data) 
+        ? response.data 
+        : Array.isArray(response.data?.data) 
+        ? response.data.data 
+        : [];
+      
+      console.log('Doctors recebidos:', doctorsData.length);
+      setDoctors(doctorsData);
     } catch (error) {
-      console.log(error);
+      console.error('Erro ao buscar profissionais:', error);
+      setDoctors([]); // Garantir que seja um array vazio em caso de erro
     } finally {
       setLoading(false);
     }
@@ -105,18 +115,20 @@ export default function NewHomeScreen({ token, onLogout }: NewHomeScreenProps) {
     professional.price ? Number(professional.price).toFixed(2) : '0.00';
 
   // Filtrar médicos baseado na busca
-  const filteredDoctors = doctors.filter((doctor) => {
-    if (!searchQuery.trim()) {
-      return true; // Se não houver busca, mostrar todos
-    }
+  const filteredDoctors = Array.isArray(doctors) 
+    ? doctors.filter((doctor) => {
+        if (!searchQuery.trim()) {
+          return true; // Se não houver busca, mostrar todos
+        }
 
-    const query = searchQuery.toLowerCase().trim();
-    const doctorName = doctor.fullName.toLowerCase();
-    const specialty = specialtyName(doctor).toLowerCase();
+        const query = searchQuery.toLowerCase().trim();
+        const doctorName = doctor?.fullName?.toLowerCase() || '';
+        const specialty = specialtyName(doctor).toLowerCase();
 
-    // Buscar por nome do médico ou especialidade
-    return doctorName.includes(query) || specialty.includes(query);
-  });
+        // Buscar por nome do médico ou especialidade
+        return doctorName.includes(query) || specialty.includes(query);
+      })
+    : [];
 
   // Limitar a quantidade de resultados (5 se não houver busca, todos se houver)
   const displayedDoctors = searchQuery.trim()

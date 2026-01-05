@@ -3,9 +3,51 @@
  * Centraliza a URL base da API e outras configurações relacionadas
  */
 
+import { Platform } from 'react-native';
+
+// Detecção automática do ambiente
 // Para Emulador Android: 10.0.2.2
-// Para iOS ou Dispositivo Físico: Use o IP da sua máquina (ex: 192.168.1.X)
-export const API_BASE_URL = 'http://10.0.2.2:3000';
+// Para iOS Simulator: localhost
+// Para Dispositivo Físico: Use o IP da sua máquina na rede local
+// Exemplo: 'http://192.168.1.100:3000'
+// Para descobrir seu IP no Windows: ipconfig
+// Para descobrir seu IP no Linux/Mac: ifconfig ou ip addr
+
+const getApiBaseUrl = (): string => {
+  // Se estiver em desenvolvimento
+  if (__DEV__) {
+    // Para Android
+    if (Platform.OS === 'android') {
+      // IMPORTANTE: Configure o IP correto baseado no seu ambiente
+      // 
+      // Para EMULADOR Android, use:
+      // return 'http://10.0.2.2:3000';
+      //
+      // Para DISPOSITIVO FÍSICO, use o IP da sua máquina na rede local:
+      // Para descobrir seu IP: ipconfig (Windows) ou ifconfig (Linux/Mac)
+      // Procure por "Endereço IPv4" na saída do comando
+      // Exemplo: 'http://192.168.1.109:3000'
+      
+      // ALTERE A LINHA ABAIXO CONFORME SEU AMBIENTE:
+      return 'http://192.168.1.109:3000'; // Dispositivo físico - ALTERE SE NECESSÁRIO
+      // return 'http://10.0.2.2:3000'; // Descomente esta linha se estiver usando emulador
+    }
+    // Para iOS Simulator
+    if (Platform.OS === 'ios') {
+      return 'http://localhost:3000'; // iOS Simulator
+    }
+  }
+  
+  // Produção ou fallback
+  return 'https://api.seudominio.com'; // Substitua pela URL de produção
+};
+
+// IMPORTANTE: Se estiver usando DISPOSITIVO FÍSICO, altere manualmente:
+// Substitua '10.0.2.2' pelo IP da sua máquina na rede local
+// Exemplo: 'http://192.168.1.100:3000'
+// Para descobrir seu IP: ipconfig (Windows) ou ifconfig (Linux/Mac)
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export const API_ENDPOINTS = {
   AUTH: {

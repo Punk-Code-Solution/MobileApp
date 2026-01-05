@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { SafeAreaView, StatusBar } from 'react-native';
+import { StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import NewHomeScreen from './NewHomeScreen';
 import MyAppointments from './MyAppointments';

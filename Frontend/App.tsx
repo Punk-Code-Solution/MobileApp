@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
-import axios from 'axios';
+import { api } from './src/config/axios.config';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
@@ -9,10 +9,6 @@ import PasswordResetSuccessScreen from './src/screens/PasswordResetSuccessScreen
 import RegisterScreen from './src/screens/RegisterScreen';
 import EmailVerificationScreen from './src/screens/EmailVerificationScreen';
 import EmailVerificationSuccessScreen from './src/screens/EmailVerificationSuccessScreen';
-
-// Para Emulador Android: 10.0.2.2
-// Para iOS ou Dispositivo Físico: Use o IP da sua máquina (ex: 192.168.1.X)
-const API_URL = 'http://10.0.2.2:3000';
 
 type AuthScreen = 'login' | 'register' | 'emailVerification' | 'emailVerificationSuccess' | 'forgotPassword' | 'resetPassword' | 'resetSuccess';
 
@@ -27,15 +23,29 @@ export default function App() {
   const handleLogin = async (email: string, password: string, role: 'PATIENT' | 'PROFESSIONAL') => {
     setLoading(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await api.post('/auth/login', {
         email: email,
         password: password,
       });
 
-      console.log('Login Sucesso:', response.data);
-      setToken(response.data.access_token);
-      setUserData(response.data.user);
-      setCurrentScreen('login');
+      console.log('Login Sucesso - Response completa:', JSON.stringify(response.data, null, 2));
+      
+      // A resposta pode vir em response.data ou response.data.data
+      const responseData = response.data.data || response.data;
+      const token = responseData.access_token || responseData.accessToken;
+      
+      console.log('Token extraído:', token ? 'Token encontrado' : 'Token NÃO encontrado');
+      console.log('Estrutura responseData:', JSON.stringify(responseData, null, 2));
+      
+      if (!token) {
+        console.error('Token não encontrado na resposta:', response.data);
+        Alert.alert('Erro', 'Token de autenticação não recebido');
+        return;
+      }
+      
+      setToken(token);
+      setUserData(responseData.user || response.data.user);
+      console.log('Token definido no estado, navegando para HomeScreen...');
     } catch (error: any) {
       console.error('Erro login:', error);
       const msg = error.response?.data?.message || 'Falha ao conectar ao servidor';
@@ -88,8 +98,11 @@ export default function App() {
 
   // --- ECRÃ DE LOGADO (HomeScreen com navegação por tabs) ---
   if (token) {
+    console.log('Token existe, renderizando HomeScreen. Token:', token.substring(0, 20) + '...');
     return <HomeScreen token={token} onLogout={handleLogout} />;
   }
+  
+  console.log('Sem token, renderizando tela de autenticação. currentScreen:', currentScreen);
 
   // --- TELAS DE AUTENTICAÇÃO ---
   switch (currentScreen) {

@@ -26,6 +26,12 @@ async function bootstrap() {
   // Habilitar CORS para comunicação com o app mobile
   app.enableCors({
     origin: (origin, callback) => {
+      // Em desenvolvimento, permitir todas as origens (incluindo IPs locais para dispositivos físicos)
+      if (appConfig.nodeEnv === 'development') {
+        callback(null, true);
+        return;
+      }
+      // Em produção, verificar lista de origens permitidas
       // Permitir requisições sem origin (mobile apps, Postman, etc)
       if (!origin || appConfig.cors.allowedOrigins.includes(origin)) {
         callback(null, true);
