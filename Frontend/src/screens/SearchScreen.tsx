@@ -9,8 +9,8 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { Professional } from '../types/appointment.types';
 import { professionalService } from '../services/api/professional.service';
@@ -84,7 +84,6 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
     return (
       <ProfessionalDetailsScreen
         professional={selectedProfessional}
-        token={token}
         onBack={handleBackToSearch}
         onBookAppointment={(professional) => {
           if (onSelectProfessional) {

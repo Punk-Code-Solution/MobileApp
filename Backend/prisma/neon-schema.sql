@@ -1,6 +1,7 @@
 -- ============================================
 -- Schema SQL para Neon PostgreSQL
 -- Gerado a partir do Prisma Schema
+-- Atualizado com todas as funcionalidades
 -- ============================================
 -- 
 -- INSTRUÇÕES DE USO:
@@ -29,6 +30,9 @@ CREATE TYPE "Role" AS ENUM ('PATIENT', 'PROFESSIONAL', 'ADMIN');
 
 -- Enum para status de agendamentos
 CREATE TYPE "AppointmentStatus" AS ENUM ('PENDING_PAYMENT', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED');
+
+-- Enum para tipos de notificação
+CREATE TYPE "NotificationType" AS ENUM ('APPOINTMENT', 'MESSAGE', 'REMINDER', 'SYSTEM');
 
 -- ============================================
 -- TABELAS
@@ -140,6 +144,58 @@ CREATE TABLE "AuditLog" (
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
 
+-- Tabela de notificações
+CREATE TABLE "Notification" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "type" "NotificationType" NOT NULL,
+    "read" BOOLEAN NOT NULL DEFAULT false,
+    "appointmentId" TEXT,
+    "messageId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- Tabela de avaliações de consultas
+CREATE TABLE "AppointmentRating" (
+    "id" TEXT NOT NULL,
+    "appointmentId" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AppointmentRating_pkey" PRIMARY KEY ("id")
+);
+
+-- Tabela de conversas
+CREATE TABLE "Conversation" (
+    "id" TEXT NOT NULL,
+    "appointmentId" TEXT,
+    "patientId" TEXT NOT NULL,
+    "professionalId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
+);
+
+-- Tabela de mensagens
+CREATE TABLE "Message" (
+    "id" TEXT NOT NULL,
+    "conversationId" TEXT NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "read" BOOLEAN NOT NULL DEFAULT false,
+    "readAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
+);
+
 -- ============================================
 -- ÍNDICES ÚNICOS
 -- ============================================
@@ -149,6 +205,27 @@ CREATE UNIQUE INDEX "Patient_userId_key" ON "Patient"("userId");
 CREATE UNIQUE INDEX "Patient_cpf_key" ON "Patient"("cpf");
 CREATE UNIQUE INDEX "Professional_userId_key" ON "Professional"("userId");
 CREATE UNIQUE INDEX "MedicalRecord_appointmentId_key" ON "MedicalRecord"("appointmentId");
+CREATE UNIQUE INDEX "AppointmentRating_appointmentId_key" ON "AppointmentRating"("appointmentId");
+CREATE UNIQUE INDEX "Conversation_appointmentId_key" ON "Conversation"("appointmentId");
+
+-- ============================================
+-- ÍNDICES
+-- ============================================
+
+-- Índices para notificações (otimização de consultas)
+CREATE INDEX "Notification_userId_read_idx" ON "Notification"("userId", "read");
+CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
+
+-- Índices para avaliações
+CREATE INDEX "AppointmentRating_appointmentId_idx" ON "AppointmentRating"("appointmentId");
+
+-- Índices para conversas
+CREATE INDEX "Conversation_patientId_professionalId_idx" ON "Conversation"("patientId", "professionalId");
+CREATE INDEX "Conversation_appointmentId_idx" ON "Conversation"("appointmentId");
+
+-- Índices para mensagens
+CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");
+CREATE INDEX "Message_senderId_idx" ON "Message"("senderId");
 
 -- ============================================
 -- FOREIGN KEYS
@@ -220,6 +297,48 @@ ALTER TABLE "AuditLog"
     FOREIGN KEY ("userId") REFERENCES "User"("id") 
     ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- Relacionamentos Notification -> User
+ALTER TABLE "Notification" 
+    ADD CONSTRAINT "Notification_userId_fkey" 
+    FOREIGN KEY ("userId") REFERENCES "User"("id") 
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Relacionamentos Notification -> Message
+ALTER TABLE "Notification" 
+    ADD CONSTRAINT "Notification_messageId_fkey" 
+    FOREIGN KEY ("messageId") REFERENCES "Message"("id") 
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Relacionamentos AppointmentRating -> Appointment
+ALTER TABLE "AppointmentRating" 
+    ADD CONSTRAINT "AppointmentRating_appointmentId_fkey" 
+    FOREIGN KEY ("appointmentId") REFERENCES "Appointment"("id") 
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Relacionamentos Conversation -> Appointment
+ALTER TABLE "Conversation" 
+    ADD CONSTRAINT "Conversation_appointmentId_fkey" 
+    FOREIGN KEY ("appointmentId") REFERENCES "Appointment"("id") 
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Relacionamentos Conversation -> Patient
+ALTER TABLE "Conversation" 
+    ADD CONSTRAINT "Conversation_patientId_fkey" 
+    FOREIGN KEY ("patientId") REFERENCES "Patient"("id") 
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Relacionamentos Conversation -> Professional
+ALTER TABLE "Conversation" 
+    ADD CONSTRAINT "Conversation_professionalId_fkey" 
+    FOREIGN KEY ("professionalId") REFERENCES "Professional"("id") 
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Relacionamentos Message -> Conversation
+ALTER TABLE "Message" 
+    ADD CONSTRAINT "Message_conversationId_fkey" 
+    FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") 
+    ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- ============================================
 -- DADOS INICIAIS (OPCIONAL)
 -- ============================================
@@ -253,4 +372,3 @@ ALTER TABLE "AuditLog"
 -- 3. Gere o Prisma Client:
 --    npx prisma generate
 -- ============================================
-
