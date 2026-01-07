@@ -1,11 +1,10 @@
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
   // ^^^ No Prisma 5, a URL fica aqui mesmo.
 }
 
@@ -23,55 +22,65 @@ enum AppointmentStatus {
   CANCELED
 }
 
+enum NotificationType {
+  APPOINTMENT
+  MESSAGE
+  REMINDER
+  SYSTEM
+}
+
 // --- AUTENTICAÇÃO E USUÁRIOS ---
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String
-  role          Role
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
   // Relacionamentos
   patient       Patient?
   professional  Professional?
   auditLogs     AuditLog[]
+  notifications Notification[]
 }
 
 model Patient {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id])
-  fullName        String
-  cpf             String   @unique
-  phone           String
-  birthDate       DateTime
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  fullName         String
+  cpf              String   @unique
+  phone            String
+  birthDate        DateTime
   stripeCustomerId String? // ou Pagarme ID
 
-  appointments    Appointment[]
-  medicalRecords  MedicalRecord[]
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
+  conversations  Conversation[]
 }
 
 model Professional {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id])
-  fullName        String
-  licenseNumber   String   // CRM
-  bio             String?  @db.Text
-  avatarUrl       String?
-  price           Decimal  @db.Decimal(10, 2)
-  isVerified      Boolean  @default(false)
-  
-  specialties     ProfessionalSpecialty[]
-  appointments    Appointment[]
-  availability    AvailabilitySlot[]
-  medicalRecords  MedicalRecord[]
+  id            String  @id @default(uuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id])
+  fullName      String
+  licenseNumber String // CRM
+  bio           String? @db.Text
+  avatarUrl     String?
+  price         Decimal @db.Decimal(10, 2)
+  isVerified    Boolean @default(false)
+
+  specialties    ProfessionalSpecialty[]
+  appointments   Appointment[]
+  availability   AvailabilitySlot[]
+  medicalRecords MedicalRecord[]
+  conversations  Conversation[]
 }
 
 // --- ESPECIALIDADES ---
 model Specialty {
-  id            Int      @id @default(autoincrement())
+  id            Int                     @id @default(autoincrement())
   name          String
   professionals ProfessionalSpecialty[]
 }
@@ -81,53 +90,55 @@ model ProfessionalSpecialty {
   specialtyId    Int
   professional   Professional @relation(fields: [professionalId], references: [id])
   specialty      Specialty    @relation(fields: [specialtyId], references: [id])
-  
+
   @@id([professionalId, specialtyId])
 }
 
 // --- CORE: AGENDAMENTOS ---
 model Appointment {
-  id             String            @id @default(uuid())
+  id             String       @id @default(uuid())
   patientId      String
   professionalId String
-  patient        Patient           @relation(fields: [patientId], references: [id])
-  professional   Professional      @relation(fields: [professionalId], references: [id])
-  
-  scheduledAt    DateTime
-  status         AppointmentStatus @default(PENDING_PAYMENT)
-  price          Decimal           @db.Decimal(10, 2)
-  
-  videoRoomUrl   String?
-  
-  medicalRecord  MedicalRecord?
-  createdAt      DateTime          @default(now())
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id])
+
+  scheduledAt DateTime
+  status      AppointmentStatus @default(PENDING_PAYMENT)
+  price       Decimal           @db.Decimal(10, 2)
+
+  videoRoomUrl String?
+
+  medicalRecord MedicalRecord?
+  rating        AppointmentRating?
+  conversation  Conversation?
+  createdAt     DateTime           @default(now())
 }
 
 model AvailabilitySlot {
   id             String       @id @default(uuid())
   professionalId String
   professional   Professional @relation(fields: [professionalId], references: [id])
-  dayOfWeek      Int          // 0-6
-  startTime      String       // "09:00"
-  endTime        String       // "12:00"
+  dayOfWeek      Int // 0-6
+  startTime      String // "09:00"
+  endTime        String // "12:00"
 }
 
 // --- SAÚDE E AUDITORIA ---
 model MedicalRecord {
-  id             String       @id @default(uuid())
-  appointmentId  String       @unique
-  appointment    Appointment  @relation(fields: [appointmentId], references: [id])
-  
+  id            String      @id @default(uuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+
   patientId      String
   patient        Patient      @relation(fields: [patientId], references: [id])
   professionalId String
   professional   Professional @relation(fields: [professionalId], references: [id])
-  
-  anamnesis      String       @db.Text
-  diagnosis      String?      @db.Text
+
+  anamnesis       String  @db.Text
+  diagnosis       String? @db.Text
   prescriptionUrl String?
-  
-  createdAt      DateTime     @default(now())
+
+  createdAt DateTime @default(now())
 }
 
 model AuditLog {
@@ -138,4 +149,73 @@ model AuditLog {
   targetId  String?
   ipAddress String?
   timestamp DateTime @default(now())
+}
+
+// --- NOTIFICAÇÕES ---
+model Notification {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  title   String
+  message String           @db.Text
+  type    NotificationType
+  read    Boolean          @default(false)
+
+  appointmentId String?
+  messageId     String?
+  messageRef    Message? @relation(fields: [messageId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+// --- AVALIAÇÕES ---
+model AppointmentRating {
+  id            String      @id @default(uuid())
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  rating  Int // 1-5
+  comment String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appointmentId])
+}
+
+// --- CHAT E MENSAGENS ---
+model Conversation {
+  id             String       @id @default(uuid())
+  appointmentId  String?      @unique
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id])
+  patientId      String
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  messages       Message[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([patientId, professionalId])
+  @@index([appointmentId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String // userId do remetente
+  text           String       @db.Text
+  read           Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  notifications Notification[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }

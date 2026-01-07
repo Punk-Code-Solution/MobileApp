@@ -7,30 +7,35 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
-  SafeAreaView,
   TextInput,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { Professional } from '../types/appointment.types';
 import ProfessionalDetailsScreen from './ProfessionalDetailsScreen';
 import AppointmentBooking from './AppointmentBooking';
 import SearchScreen from './SearchScreen';
 import { professionalService } from '../services/api/professional.service';
+import { useFadeIn } from '../hooks/useAnimation';
 
 interface NewHomeScreenProps {
   token: string;
   onLogout: () => void;
+  onShowNotifications?: () => void;
+  unreadNotificationsCount?: number;
 }
 
 type ScreenState = 'home' | 'details' | 'booking' | 'search';
 
-export default function NewHomeScreen({ token, onLogout, onShowNotifications }: NewHomeScreenProps) {
+export default function NewHomeScreen({ token, onLogout, onShowNotifications, unreadNotificationsCount = 0 }: NewHomeScreenProps) {
   const [screenState, setScreenState] = useState<ScreenState>('home');
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [doctors, setDoctors] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const fadeOpacity = useFadeIn(400);
 
   useEffect(() => {
     fetchDoctors();
@@ -169,9 +174,13 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications }: 
             onPress={onShowNotifications}
           >
             <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>2</Text>
-            </View>
+            {unreadNotificationsCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -189,11 +198,12 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications }: 
       </View>
 
       {/* Conteúdo */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <Animated.View style={{ flex: 1, opacity: fadeOpacity }}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         <Text style={styles.sectionTitle}>Serviços em destaque</Text>
 
         {loading ? (
@@ -235,7 +245,9 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications }: 
                       <Text style={styles.doctorPrice}>R$ {priceFormatted(doctor)}</Text>
                       <View style={styles.ratingContainer}>
                         <Text style={styles.star}>⭐</Text>
-                        <Text style={styles.rating}>4.5</Text>
+                        <Text style={styles.rating}>
+                          {doctor.averageRating ? doctor.averageRating.toFixed(1) : '0.0'}
+                        </Text>
                       </View>
                     </View>
                   </View>
@@ -250,7 +262,8 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications }: 
             )}
           </>
         )}
-      </ScrollView>
+        </ScrollView>
+      </Animated.View>
     </SafeAreaView>
   );
 }

@@ -6,12 +6,22 @@
 import { api } from '../../config/axios.config';
 import { API_ENDPOINTS } from '../../config/api.config';
 import { Appointment, CreateAppointmentDto } from '../../types/appointment.types';
+import { getCache, setCache, removeCache, CACHE_KEYS } from '../../utils/cache';
 
 export const appointmentService = {
   /**
    * Busca todos os agendamentos do usuário autenticado
+   * Usa cache para melhorar performance
    */
-  async getMyAppointments(token: string): Promise<Appointment[]> {
+  async getMyAppointments(token: string, useCache: boolean = true): Promise<Appointment[]> {
+    // Tentar buscar do cache primeiro
+    if (useCache) {
+      const cached = await getCache<Appointment[]>(CACHE_KEYS.APPOINTMENTS);
+      if (cached) {
+        return cached;
+      }
+    }
+
     const response = await api.get<{ data: Appointment[]; statusCode: number }>(API_ENDPOINTS.APPOINTMENTS.ME, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -19,7 +29,14 @@ export const appointmentService = {
     });
     // O TransformInterceptor envolve a resposta em { data, statusCode }
     const appointments = response.data.data || response.data;
-    return Array.isArray(appointments) ? appointments : [];
+    const appointmentsArray = Array.isArray(appointments) ? appointments : [];
+
+    // Salvar no cache (TTL de 2 minutos para appointments)
+    if (useCache) {
+      await setCache(CACHE_KEYS.APPOINTMENTS, appointmentsArray, { ttl: 2 * 60 * 1000 });
+    }
+
+    return appointmentsArray;
   },
 
   /**
@@ -49,6 +66,9 @@ export const appointmentService = {
         appointment.createdAt = appointment.createdAt;
       }
       
+      // Invalidar cache de appointments após criar novo
+      await removeCache(CACHE_KEYS.APPOINTMENTS);
+
       return appointment as Appointment;
     } catch (error: any) {
       console.error('Erro em createAppointment:', error);
@@ -70,6 +90,30 @@ export const appointmentService = {
         },
       }
     );
+    // Invalidar cache após cancelar
+    await removeCache(CACHE_KEYS.APPOINTMENTS);
+  },
+
+  /**
+   * Avalia um agendamento
+   */
+  async rateAppointment(
+    token: string,
+    appointmentId: string,
+    data: { rating: number; comment?: string }
+  ): Promise<void> {
+    const response = await api.post<{ data: any; statusCode: number }>(
+      API_ENDPOINTS.APPOINTMENTS.RATE(appointmentId),
+      data,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    // Invalidar cache após avaliar
+    await removeCache(CACHE_KEYS.APPOINTMENTS);
+    return response.data;
   },
 };
 

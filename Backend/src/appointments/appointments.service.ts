@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { RateAppointmentDto } from './dto/rate-appointment.dto';
 
 @Injectable()
 export class AppointmentsService {
@@ -149,7 +150,43 @@ export class AppointmentsService {
       timeout: 10000, // Timeout de 10 segundos para a transação
     });
 
+    // Criar notificação para o paciente sobre o agendamento
+    try {
+      await this.createAppointmentNotification(appointment, patient.userId);
+    } catch (error) {
+      // Não falhar a criação do agendamento se a notificação falhar
+      console.error('Erro ao criar notificação de agendamento:', error);
+    }
+
     return appointment;
+  }
+
+  /**
+   * Cria notificação quando um agendamento é criado
+   */
+  private async createAppointmentNotification(appointment: any, userId: string) {
+    const professionalName = appointment.professional?.fullName || 'Profissional';
+    const appointmentDate = new Date(appointment.scheduledAt);
+    const formattedDate = appointmentDate.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const formattedTime = appointmentDate.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        userId,
+        title: 'Consulta Agendada',
+        message: `Sua consulta com ${professionalName} foi agendada para ${formattedDate} às ${formattedTime}`,
+        type: 'APPOINTMENT',
+        appointmentId: appointment.id,
+        read: false,
+      },
+    });
   }
 
   async findAll(userId: string, userRole: string) {
@@ -351,7 +388,7 @@ export class AppointmentsService {
     }
 
     // Cancelar o agendamento
-    return this.prisma.appointment.update({
+    const canceledAppointment = await this.prisma.appointment.update({
       where: { id },
       data: {
         status: 'CANCELED',
@@ -371,10 +408,142 @@ export class AppointmentsService {
             id: true,
             fullName: true,
             phone: true,
+            userId: true,
           },
         },
       },
     });
+
+    // Criar notificação de cancelamento
+    try {
+      const professionalName = canceledAppointment.professional?.fullName || 'Profissional';
+      await this.prisma.notification.create({
+        data: {
+          userId: canceledAppointment.patient.userId,
+          title: 'Consulta Cancelada',
+          message: `Sua consulta com ${professionalName} foi cancelada`,
+          type: 'APPOINTMENT',
+          appointmentId: canceledAppointment.id,
+          read: false,
+        },
+      });
+    } catch (error) {
+      console.error('Erro ao criar notificação de cancelamento:', error);
+    }
+
+    // Criar notificação de cancelamento
+    try {
+      const professionalName = canceledAppointment.professional?.fullName || 'Profissional';
+      await this.prisma.notification.create({
+        data: {
+          userId: canceledAppointment.patient.userId,
+          title: 'Consulta Cancelada',
+          message: `Sua consulta com ${professionalName} foi cancelada`,
+          type: 'APPOINTMENT',
+          appointmentId: canceledAppointment.id,
+          read: false,
+        },
+      });
+    } catch (error) {
+      console.error('Erro ao criar notificação de cancelamento:', error);
+    }
+
+    return canceledAppointment;
+  }
+
+  async rate(
+    appointmentId: string,
+    rateAppointmentDto: RateAppointmentDto,
+    userId: string,
+    userRole: string,
+  ) {
+    // Apenas pacientes podem avaliar consultas
+    if (userRole !== 'PATIENT') {
+      throw new ForbiddenException('Apenas pacientes podem avaliar consultas.');
+    }
+
+    // Buscar o agendamento
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        patient: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Agendamento não encontrado.');
+    }
+
+    // Verificar se o agendamento pertence ao usuário
+    if (appointment.patient.userId !== userId) {
+      throw new ForbiddenException('Você não tem permissão para avaliar este agendamento.');
+    }
+
+    // Verificar se o agendamento foi concluído
+    if (appointment.status !== 'COMPLETED') {
+      throw new BadRequestException('Apenas consultas concluídas podem ser avaliadas.');
+    }
+
+    // Verificar se já existe uma avaliação
+    const existingRating = await this.prisma.appointmentRating.findUnique({
+      where: { appointmentId },
+    });
+
+    let rating;
+    if (existingRating) {
+      // Atualizar avaliação existente
+      rating = await this.prisma.appointmentRating.update({
+        where: { appointmentId },
+        data: {
+          rating: rateAppointmentDto.rating,
+          comment: rateAppointmentDto.comment || null,
+        },
+      });
+    } else {
+      // Criar nova avaliação
+      rating = await this.prisma.appointmentRating.create({
+        data: {
+          appointmentId,
+          rating: rateAppointmentDto.rating,
+          comment: rateAppointmentDto.comment || null,
+        },
+      });
+    }
+
+    // Criar notificação para o profissional sobre a avaliação
+    try {
+      const professional = await this.prisma.professional.findUnique({
+        where: { id: appointment.professionalId },
+        select: { userId: true },
+      });
+
+      if (professional) {
+        await this.prisma.notification.create({
+          data: {
+            userId: professional.userId,
+            title: 'Nova Avaliação Recebida',
+            message: `Você recebeu uma avaliação de ${rateAppointmentDto.rating} estrelas${rateAppointmentDto.comment ? ' com comentário' : ''}`,
+            type: 'SYSTEM',
+            appointmentId: appointment.id,
+            read: false,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao criar notificação de avaliação:', error);
+    }
+
+    return {
+      id: rating.id,
+      appointmentId: rating.appointmentId,
+      rating: rating.rating,
+      comment: rating.comment,
+      message: 'Avaliação registrada com sucesso.',
+    };
   }
 }
 

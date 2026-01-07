@@ -45,6 +45,18 @@ export default function App() {
         return;
       }
       
+      // Validar se o tipo de usuário selecionado corresponde ao tipo retornado pela API
+      const userRole = response.user?.role;
+      if (userRole && userRole !== role) {
+        const roleName = role === 'PATIENT' ? 'Cliente' : 'Profissional';
+        const actualRoleName = userRole === 'PATIENT' ? 'Cliente' : 'Profissional';
+        Alert.alert(
+          'Tipo de usuário incorreto',
+          `Este usuário é do tipo ${actualRoleName}. Por favor, selecione "${actualRoleName}" na tela de login.`
+        );
+        return;
+      }
+      
       setToken(token);
       setUserData(response.user);
       console.log('Token definido no estado, navegando para HomeScreen...');
@@ -101,7 +113,7 @@ export default function App() {
   // --- ECRÃ DE LOGADO (HomeScreen com navegação por tabs) ---
   if (token) {
     console.log('Token existe, renderizando HomeScreen. Token:', token.substring(0, 20) + '...');
-    return <HomeScreen token={token} onLogout={handleLogout} />;
+    return <HomeScreen token={token} onLogout={handleLogout} userRole={userData?.role} />;
   }
   
   console.log('Sem token, renderizando tela de autenticação. currentScreen:', currentScreen);

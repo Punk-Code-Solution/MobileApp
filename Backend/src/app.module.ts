@@ -6,6 +6,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ProfessionalsModule } from './professionals/professionals.module';
 import { AppointmentsModule } from './appointments/appointments.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { AppointmentsModule } from './appointments/appointments.module';
     AuthModule,
     ProfessionalsModule,
     AppointmentsModule,
+    NotificationsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService], // <--- AQUI SÓ DEVE TER O AppService. Não coloque UsersService aqui.

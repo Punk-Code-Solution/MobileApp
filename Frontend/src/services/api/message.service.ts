@@ -26,7 +26,7 @@ export const messageService = {
    * Busca mensagens de uma conversa
    */
   async getMessages(token: string, conversationId: string): Promise<any[]> {
-    const response = await api.get<{ data: any[]; statusCode: number }>(`${API_ENDPOINTS.MESSAGES.BASE}/${conversationId}`, {
+    const response = await api.get<{ data: any[]; statusCode: number }>(`${API_ENDPOINTS.MESSAGES.CONVERSATIONS}/${conversationId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -41,7 +41,7 @@ export const messageService = {
    */
   async sendMessage(token: string, conversationId: string, text: string): Promise<void> {
     await api.post(
-      `${API_ENDPOINTS.MESSAGES.BASE}/${conversationId}`,
+      `${API_ENDPOINTS.MESSAGES.CONVERSATIONS}/${conversationId}`,
       { text },
       {
         headers: {
@@ -49,6 +49,22 @@ export const messageService = {
         },
       }
     );
+  },
+
+  /**
+   * Busca ou cria conversa vinculada a uma consulta
+   */
+  async getOrCreateConversationByAppointment(token: string, appointmentId: string): Promise<Conversation> {
+    const response = await api.get<{ data: Conversation; statusCode: number }>(
+      API_ENDPOINTS.MESSAGES.BY_APPOINTMENT(appointmentId),
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const conversation = response.data.data || response.data;
+    return conversation;
   },
 };
 

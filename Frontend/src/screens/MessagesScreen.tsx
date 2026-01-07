@@ -9,10 +9,11 @@ import {
   RefreshControl,
   ActivityIndicator,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import ChatScreen from './ChatScreen';
+import { messageService } from '../services/api/message.service';
 
 interface Conversation {
   id: string;
@@ -28,46 +29,19 @@ interface Conversation {
 interface MessagesScreenProps {
   token: string;
   initialConversation?: {
-    professionalId: string;
+    professionalId?: string;
+    conversationId?: string;
     professionalName: string;
     professionalAvatar?: string;
   } | null;
   onConversationOpened?: () => void;
   onShowNotifications?: () => void;
+  unreadNotificationsCount?: number;
+  onConversationsUpdated?: () => void;
 }
 
-// Dados mockados - substituir por chamada à API
-const mockConversations: Conversation[] = [
-  {
-    id: '1',
-    professionalId: '1',
-    professionalName: 'Dr. Fulano de Tal',
-    lastMessage: 'Os documentos nece...',
-    lastMessageTime: '1m',
-    unreadCount: 5,
-    isOnline: true,
-  },
-  {
-    id: '2',
-    professionalId: '2',
-    professionalName: 'Dra. Maria Silva',
-    lastMessage: 'Sua consulta está agendada para...',
-    lastMessageTime: '15m',
-    unreadCount: 2,
-    isOnline: false,
-  },
-  {
-    id: '3',
-    professionalId: '3',
-    professionalName: 'Dr. João Santos',
-    lastMessage: 'Obrigado pela consulta!',
-    lastMessageTime: '2h',
-    unreadCount: 0,
-    isOnline: true,
-  },
-];
 
-export default function MessagesScreen({ token, initialConversation, onConversationOpened, onShowNotifications }: MessagesScreenProps) {
+export default function MessagesScreen({ token, initialConversation, onConversationOpened, onShowNotifications, unreadNotificationsCount = 0, onConversationsUpdated }: MessagesScreenProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,41 +53,92 @@ export default function MessagesScreen({ token, initialConversation, onConversat
 
   // Quando uma conversa inicial é passada, encontrar ou criar e abrir
   useEffect(() => {
-    if (initialConversation && conversations.length > 0) {
-      const existingConversation = conversations.find(
-        (conv) => conv.professionalId === initialConversation.professionalId
-      );
+    if (!initialConversation) return;
 
-      if (existingConversation) {
-        // Se já existe, abrir essa conversa
-        setSelectedConversation(existingConversation);
-        onConversationOpened?.();
-      } else {
-        // Se não existe, criar uma nova conversa e abrir
-        const newConversation: Conversation = {
-          id: `new-${initialConversation.professionalId}`,
-          professionalId: initialConversation.professionalId,
-          professionalName: initialConversation.professionalName,
-          professionalAvatar: initialConversation.professionalAvatar,
-          lastMessage: '',
-          lastMessageTime: 'Agora',
-          unreadCount: 0,
-          isOnline: false,
-        };
-        setSelectedConversation(newConversation);
-        onConversationOpened?.();
+    const openConversation = async () => {
+      // Se tiver conversationId, buscar a conversa diretamente
+      if (initialConversation.conversationId) {
+        // Aguardar conversas serem carregadas
+        if (conversations.length > 0) {
+          const existingConversation = conversations.find(
+            (conv) => conv.id === initialConversation.conversationId
+          );
+
+          if (existingConversation) {
+            setSelectedConversation(existingConversation);
+            onConversationOpened?.();
+            return;
+          }
+        }
+        
+        // Se não encontrou, recarregar conversas e tentar novamente
+        try {
+          const updatedConversations = await messageService.getConversations(token);
+          setConversations(updatedConversations);
+          const found = updatedConversations.find(
+            (conv) => conv.id === initialConversation.conversationId
+          );
+          if (found) {
+            setSelectedConversation(found);
+            onConversationOpened?.();
+          }
+        } catch (error) {
+          console.error('Erro ao buscar conversa:', error);
+        }
+      } else if (initialConversation.professionalId && conversations.length > 0) {
+        // Fallback: buscar por professionalId (comportamento antigo)
+        const existingConversation = conversations.find(
+          (conv) => conv.professionalId === initialConversation.professionalId
+        );
+
+        if (existingConversation) {
+          setSelectedConversation(existingConversation);
+          onConversationOpened?.();
+        } else {
+          // Se não existe, criar uma nova conversa e abrir
+          const newConversation: Conversation = {
+            id: `new-${initialConversation.professionalId}`,
+            professionalId: initialConversation.professionalId,
+            professionalName: initialConversation.professionalName,
+            professionalAvatar: initialConversation.professionalAvatar,
+            lastMessage: '',
+            lastMessageTime: 'Agora',
+            unreadCount: 0,
+            isOnline: false,
+          };
+          setSelectedConversation(newConversation);
+          onConversationOpened?.();
+        }
       }
-    }
-  }, [initialConversation, conversations, onConversationOpened]);
+    };
+
+    openConversation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialConversation, conversations, onConversationOpened, token]);
 
   const fetchConversations = useCallback(async () => {
-    // Simulação - substituir por chamada à API
-    setTimeout(() => {
-      setConversations(mockConversations);
+    try {
+      // Buscar conversas da API
+      const conversationsData = await messageService.getConversations(token);
+      setConversations(conversationsData);
+      
+      // Notificar atualização
+      if (onConversationsUpdated) {
+        onConversationsUpdated();
+      }
+    } catch (error: any) {
+      // Se o endpoint não estiver disponível (404), retornar array vazio
+      // Não logar erro se for 404 (endpoint ainda não implementado)
+      if (error?.response?.status !== 404) {
+        console.error('Erro ao buscar conversas:', error);
+      }
+      // Em caso de erro, retornar array vazio
+      setConversations([]);
+    } finally {
       setLoading(false);
       setRefreshing(false);
-    }, 500);
-  }, []);
+    }
+  }, [token, onConversationsUpdated]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -121,13 +146,50 @@ export default function MessagesScreen({ token, initialConversation, onConversat
   }, [fetchConversations]);
 
   const handleConversationPress = (conversation: Conversation) => {
+    // Marcar mensagens como lidas ao abrir o chat
+    if (conversation.unreadCount > 0) {
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversation.id ? { ...conv, unreadCount: 0 } : conv
+        )
+      );
+    }
     setSelectedConversation(conversation);
   };
 
   const handleBackFromChat = () => {
     setSelectedConversation(null);
     fetchConversations(); // Atualizar lista ao voltar
+    
+    // Atualizar contadores quando voltar do chat
+    if (onConversationsUpdated) {
+      onConversationsUpdated();
+    }
   };
+
+  // Memoizar a função onMessagesRead para evitar loops infinitos
+  const handleMessagesRead = useCallback((conversationId: string) => {
+    // Marcar mensagens como lidas quando o chat é aberto
+    setConversations((prev) => {
+      // Verificar se realmente precisa atualizar
+      const needsUpdate = prev.some(
+        (conv) => conv.id === conversationId && conv.unreadCount > 0
+      );
+      
+      if (!needsUpdate) {
+        return prev; // Não atualizar se não houver mudança
+      }
+      
+      return prev.map((conv) =>
+        conv.id === conversationId ? { ...conv, unreadCount: 0 } : conv
+      );
+    });
+    
+    // Atualizar contadores
+    if (onConversationsUpdated) {
+      onConversationsUpdated();
+    }
+  }, [onConversationsUpdated]);
 
   // Se uma conversa foi selecionada, mostra a tela de chat
   if (selectedConversation) {
@@ -145,6 +207,7 @@ export default function MessagesScreen({ token, initialConversation, onConversat
         conversation={chatConversation}
         token={token}
         onBack={handleBackFromChat}
+        onMessagesRead={handleMessagesRead}
       />
     );
   }
@@ -218,9 +281,13 @@ export default function MessagesScreen({ token, initialConversation, onConversat
             onPress={onShowNotifications}
           >
             <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>2</Text>
-            </View>
+            {unreadNotificationsCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>

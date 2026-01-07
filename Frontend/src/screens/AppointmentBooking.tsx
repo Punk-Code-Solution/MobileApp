@@ -248,7 +248,9 @@ export default function AppointmentBooking({
               <Text style={styles.professionalName}>{professional.fullName}</Text>
               <View style={styles.ratingContainer}>
                 <Text style={styles.star}>⭐</Text>
-                <Text style={styles.rating}>4.5 (261)</Text>
+                <Text style={styles.rating}>
+                  {professional.averageRating ? professional.averageRating.toFixed(1) : '0.0'} ({professional.reviewsCount || 0})
+                </Text>
               </View>
             </View>
           </View>

@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
-  SafeAreaView,
   ScrollView,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import ProfileOptionsScreen from './ProfileOptionsScreen';
 
@@ -17,11 +17,12 @@ interface ProfileScreenProps {
   token: string;
   onLogout: () => void;
   onShowNotifications?: () => void;
+  unreadNotificationsCount?: number;
 }
 
 type ScreenState = 'profile' | 'options';
 
-export default function ProfileScreen({ token, onLogout, onShowNotifications }: ProfileScreenProps) {
+export default function ProfileScreen({ token, onLogout, onShowNotifications, unreadNotificationsCount = 0 }: ProfileScreenProps) {
   const [screenState, setScreenState] = useState<ScreenState>('profile');
   const [userName, setUserName] = useState('Usuário');
 
@@ -81,9 +82,13 @@ export default function ProfileScreen({ token, onLogout, onShowNotifications }: 
             onPress={onShowNotifications}
           >
             <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>2</Text>
-            </View>
+            {unreadNotificationsCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>

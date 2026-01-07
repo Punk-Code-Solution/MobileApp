@@ -7,29 +7,23 @@ import {
   TouchableOpacity,
   RefreshControl,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  date: string;
-  type: 'appointment' | 'message' | 'system' | 'reminder';
-  read: boolean;
-}
+import { notificationService, Notification } from '../services/api/notification.service';
 
 interface NotificationsScreenProps {
   token: string;
   onBack: () => void;
   onNotificationPress?: (notification: Notification) => void;
+  onNotificationsUpdated?: () => void;
 }
 
 export default function NotificationsScreen({
   token,
   onBack,
   onNotificationPress,
+  onNotificationsUpdated,
 }: NotificationsScreenProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,56 +36,20 @@ export default function NotificationsScreen({
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      // TODO: Implementar chamada à API
-      // const data = await notificationService.getNotifications(token);
+      // Chamada à API para buscar notificações
+      const data = await notificationService.getMyNotifications(token);
       
-      // Mock data para demonstração
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          title: 'Consulta Agendada',
-          message: 'Sua consulta com Dr. João Silva foi agendada para 15/01/2024 às 14:30',
-          date: '2024-01-10T10:00:00',
-          type: 'appointment',
-          read: false,
-        },
-        {
-          id: '2',
-          title: 'Nova Mensagem',
-          message: 'Você recebeu uma nova mensagem de Dr. Maria Santos',
-          date: '2024-01-10T09:30:00',
-          type: 'message',
-          read: false,
-        },
-        {
-          id: '3',
-          title: 'Lembrete de Consulta',
-          message: 'Você tem uma consulta amanhã às 10:00 com Dr. Pedro Costa',
-          date: '2024-01-09T18:00:00',
-          type: 'reminder',
-          read: true,
-        },
-        {
-          id: '4',
-          title: 'Consulta Cancelada',
-          message: 'Sua consulta de 20/01/2024 foi cancelada',
-          date: '2024-01-08T14:00:00',
-          type: 'appointment',
-          read: true,
-        },
-        {
-          id: '5',
-          title: 'Bem-vindo!',
-          message: 'Bem-vindo ao nosso aplicativo de saúde',
-          date: '2024-01-05T08:00:00',
-          type: 'system',
-          read: true,
-        },
-      ];
+      // Ordenar por data (mais recente primeiro)
+      const sortedNotifications = data.sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateB - dateA;
+      });
 
-      setNotifications(mockNotifications);
-    } catch (error) {
+      setNotifications(sortedNotifications);
+    } catch (error: any) {
       console.error('Erro ao buscar notificações:', error);
+      // Se a API não estiver disponível, usar array vazio
       setNotifications([]);
     } finally {
       setLoading(false);
@@ -104,13 +62,31 @@ export default function NotificationsScreen({
     fetchNotifications();
   };
 
-  const handleNotificationPress = (notification: Notification) => {
-    // Marcar como lida
+  const handleNotificationPress = async (notification: Notification) => {
+    // Marcar como lida localmente primeiro (otimista)
     setNotifications((prev) =>
       prev.map((notif) =>
         notif.id === notification.id ? { ...notif, read: true } : notif
       )
     );
+
+    // Marcar como lida na API
+    try {
+      await notificationService.markAsRead(token, notification.id);
+      
+      // Notificar atualização dos contadores
+      if (onNotificationsUpdated) {
+        onNotificationsUpdated();
+      }
+    } catch (error) {
+      console.error('Erro ao marcar notificação como lida:', error);
+      // Reverter mudança local em caso de erro
+      setNotifications((prev) =>
+        prev.map((notif) =>
+          notif.id === notification.id ? { ...notif, read: false } : notif
+        )
+      );
+    }
 
     if (onNotificationPress) {
       onNotificationPress(notification);

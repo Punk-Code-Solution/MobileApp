@@ -8,13 +8,15 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import CallScreen from './CallScreen';
 import VideoScreen from './VideoScreen';
+import { messageService } from '../services/api/message.service';
 
 interface Message {
   id: string;
@@ -37,47 +39,9 @@ interface ChatScreenProps {
   conversation: Conversation;
   token: string;
   onBack: () => void;
+  onMessagesRead?: (conversationId: string) => void;
 }
 
-// Dados mockados - substituir por chamada à API
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt',
-    senderId: 'professional',
-    timestamp: '10:30',
-    type: 'text',
-  },
-  {
-    id: '2',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit',
-    senderId: 'user',
-    timestamp: '10:32',
-    type: 'text',
-  },
-  {
-    id: '3',
-    text: '',
-    senderId: 'professional',
-    timestamp: '10:33',
-    type: 'image',
-    imageUrl: 'https://via.placeholder.com/200x300/4A90E2/FFFFFF?text=X-Ray',
-  },
-  {
-    id: '4',
-    text: 'Lorem ipsum dolor sit amet',
-    senderId: 'professional',
-    timestamp: '10:35',
-    type: 'text',
-  },
-  {
-    id: '5',
-    text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit',
-    senderId: 'user',
-    timestamp: '10:36',
-    type: 'text',
-  },
-];
 
 type ScreenState = 'chat' | 'call' | 'video';
 
@@ -85,33 +49,101 @@ export default function ChatScreen({
   conversation,
   token,
   onBack,
+  onMessagesRead,
 }: ChatScreenProps) {
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [screenState, setScreenState] = useState<ScreenState>('chat');
+  const [loading, setLoading] = useState(true);
   const flatListRef = useRef<FlatList>(null);
+
+  // Buscar mensagens quando o chat é aberto
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!conversation.id) return;
+      
+      try {
+        setLoading(true);
+        const messagesData = await messageService.getMessages(token, conversation.id);
+        
+        // O backend já retorna no formato correto: { id, text, senderId: 'user' | 'professional', timestamp, type }
+        // Apenas garantir que seja um array
+        const formattedMessages: Message[] = Array.isArray(messagesData) 
+          ? messagesData.map((msg: any) => ({
+              id: msg.id,
+              text: msg.text,
+              senderId: msg.senderId || 'professional', // 'user' ou 'professional'
+              timestamp: msg.timestamp || new Date().toLocaleTimeString('pt-BR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              type: (msg.type || 'text') as 'text' | 'image',
+            }))
+          : [];
+        
+        setMessages(formattedMessages);
+      } catch (error: any) {
+        // Se o endpoint não estiver disponível (404), apenas logar
+        if (error?.response?.status !== 404) {
+          console.error('Erro ao buscar mensagens:', error);
+        }
+        // Em caso de erro, manter array vazio
+        setMessages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMessages();
+  }, [conversation.id, token]);
+
+  useEffect(() => {
+    // Marcar mensagens como lidas quando o chat é aberto
+    // Usar uma flag para garantir que só chame uma vez
+    if (onMessagesRead && conversation.id) {
+      onMessagesRead(conversation.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.id]); // Remover onMessagesRead das dependências para evitar loops
 
   useEffect(() => {
     // Scroll para o final quando mensagens mudarem
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    if (messages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputText.trim()) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: inputText.trim(),
-        senderId: 'user',
-        timestamp: new Date().toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        type: 'text',
-      };
-      setMessages([...messages, newMessage]);
-      setInputText('');
+      try {
+        // Enviar mensagem para a API
+        await messageService.sendMessage(token, conversation.id, inputText.trim());
+        
+        // Buscar mensagens atualizadas
+        const updatedMessages = await messageService.getMessages(token, conversation.id);
+        setMessages(updatedMessages);
+        setInputText('');
+      } catch (error: any) {
+        // Se o endpoint não estiver disponível (404), apenas logar
+        if (error?.response?.status !== 404) {
+          console.error('Erro ao enviar mensagem:', error);
+        }
+        // Em caso de erro, ainda adicionar localmente para feedback visual
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          text: inputText.trim(),
+          senderId: 'user',
+          timestamp: new Date().toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          type: 'text',
+        };
+        setMessages([...messages, newMessage]);
+        setInputText('');
+      }
     }
   };
 
@@ -149,14 +181,18 @@ export default function ChatScreen({
     );
   }
 
-  const renderMessage = ({ item }: { item: Message }) => {
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isUser = item.senderId === 'user';
+    const previousMessage = index > 0 ? messages[index - 1] : null;
+    const isSameSender = previousMessage?.senderId === item.senderId;
+    const showSpacing = !isSameSender; // Mostrar espaço apenas quando muda o remetente
 
     return (
       <View
         style={[
           styles.messageContainer,
           isUser ? styles.userMessageContainer : styles.professionalMessageContainer,
+          showSpacing && styles.messageContainerWithSpacing,
         ]}
       >
         {item.type === 'text' ? (
@@ -237,15 +273,30 @@ export default function ChatScreen({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.messagesList}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={[
+              styles.messagesList,
+              messages.length === 0 && styles.emptyMessagesList,
+            ]}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            ListEmptyComponent={
+              <View style={styles.emptyMessagesContainer}>
+                <Text style={styles.emptyMessagesText}>Nenhuma mensagem ainda</Text>
+                <Text style={styles.emptyMessagesSubtext}>Envie uma mensagem para começar a conversa</Text>
+              </View>
+            }
+          />
+        )}
 
         {/* Input */}
         <View style={styles.inputContainer}>
@@ -332,12 +383,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8FC',
   },
   messagesList: {
-    padding: 16,
+    padding: 12,
     paddingBottom: 8,
   },
   messageContainer: {
-    marginBottom: 16,
+    marginBottom: 0,
     alignItems: 'flex-start',
+  },
+  messageContainerWithSpacing: {
+    marginTop: 8,
   },
   userMessageContainer: {
     alignItems: 'flex-end',
@@ -349,7 +403,7 @@ const styles = StyleSheet.create({
     maxWidth: '75%',
     padding: 12,
     borderRadius: 16,
-    marginBottom: 4,
+    marginBottom: 0,
   },
   userMessageBubble: {
     backgroundColor: colors.primary,
@@ -373,7 +427,7 @@ const styles = StyleSheet.create({
     maxWidth: '75%',
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 4,
+    marginBottom: 0,
   },
   messageImage: {
     width: 200,
@@ -384,6 +438,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text.secondary,
     marginHorizontal: 4,
+    marginTop: 2,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -430,6 +485,30 @@ const styles = StyleSheet.create({
   },
   sendIcon: {
     fontSize: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyMessagesList: {
+    flexGrow: 1,
+  },
+  emptyMessagesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyMessagesText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 8,
+  },
+  emptyMessagesSubtext: {
+    fontSize: 14,
+    color: colors.text.secondary,
   },
 });
 

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { RateAppointmentDto } from './dto/rate-appointment.dto';
 import { JwtAuthGuard } from '../common/guards';
 import { CurrentUser, type CurrentUserPayload } from '../common/decorators';
 
@@ -54,6 +55,16 @@ export class AppointmentsController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.appointmentsService.cancel(id, user.userId, user.role);
+  }
+
+  @Post(':id/rate')
+  @HttpCode(HttpStatus.OK)
+  rate(
+    @Param('id') id: string,
+    @Body() rateAppointmentDto: RateAppointmentDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.appointmentsService.rate(id, rateAppointmentDto, user.userId, user.role);
   }
 }
 

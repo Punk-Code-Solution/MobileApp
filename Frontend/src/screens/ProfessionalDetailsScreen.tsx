@@ -25,8 +25,8 @@ export default function ProfessionalDetailsScreen({
 }: ProfessionalDetailsScreenProps) {
   const specialtyName = professional.specialties?.[0]?.specialty?.name || 'Especialista';
   const priceFormatted = professional.price ? Number(professional.price).toFixed(2) : '0.00';
-  const rating = '4.5';
-  const reviewsCount = '261';
+  const rating = professional.averageRating ? professional.averageRating.toFixed(1) : '0.0';
+  const reviewsCount = professional.reviewsCount || 0;
 
   return (
     <SafeAreaView style={styles.container}>

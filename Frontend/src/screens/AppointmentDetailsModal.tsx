@@ -13,6 +13,7 @@ import {
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
+import { messageService } from '../services/api/message.service';
 import RateAppointmentScreen from './RateAppointmentScreen';
 
 interface AppointmentDetailsModalProps {
@@ -20,7 +21,8 @@ interface AppointmentDetailsModalProps {
   token: string;
   onClose: () => void;
   onCancelSuccess?: () => void;
-  onSendMessage?: (professionalId: string, professionalName: string, professionalAvatar?: string) => void;
+  onSendMessage?: (conversationId: string, professionalId: string, professionalName: string, professionalAvatar?: string) => void;
+  hideSendMessage?: boolean; // Prop para ocultar o botão de enviar mensagem (usado no histórico)
 }
 
 // Função para formatar data (DD/MM/YYYY)
@@ -48,6 +50,7 @@ export default function AppointmentDetailsModal({
   onClose,
   onCancelSuccess,
   onSendMessage,
+  hideSendMessage = false,
 }: AppointmentDetailsModalProps) {
   const [loading, setLoading] = useState(false);
   const [modalState, setModalState] = useState<ModalState>('details');
@@ -107,14 +110,46 @@ export default function AppointmentDetailsModal({
     );
   };
 
-  const handleSendMessage = () => {
-    const professionalId = appointment.professional?.id || '';
-    const professionalName = appointment.professional?.fullName || 'Médico';
-    const professionalAvatar = appointment.professional?.avatarUrl;
-    
-    if (onSendMessage) {
-      onSendMessage(professionalId, professionalName, professionalAvatar);
-      onClose();
+  const handleSendMessage = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar ou criar conversa vinculada à consulta
+      const conversation = await messageService.getOrCreateConversationByAppointment(
+        token,
+        appointment.id
+      );
+      
+      const professionalId = appointment.professional?.id || '';
+      const professionalName = appointment.professional?.fullName || 'Médico';
+      const professionalAvatar = appointment.professional?.avatarUrl;
+      
+      if (onSendMessage) {
+        onSendMessage(conversation.id, professionalId, professionalName, professionalAvatar);
+        onClose();
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar/criar conversa:', error);
+      
+      // Se o endpoint não estiver disponível (404), usar fallback
+      if (error?.response?.status === 404) {
+        // Fallback: usar professionalId para navegar (comportamento antigo)
+        const professionalId = appointment.professional?.id || '';
+        const professionalName = appointment.professional?.fullName || 'Médico';
+        const professionalAvatar = appointment.professional?.avatarUrl;
+        
+        if (onSendMessage) {
+          onSendMessage('', professionalId, professionalName, professionalAvatar);
+          onClose();
+        }
+      } else {
+        Alert.alert(
+          'Erro',
+          'Não foi possível iniciar a conversa. Tente novamente.'
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -240,13 +275,15 @@ export default function AppointmentDetailsModal({
               )}
               {canCancel && (
                 <>
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.messageButton]}
-                    onPress={handleSendMessage}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.actionButtonText}>ENVIAR MENSAGEM</Text>
-                  </TouchableOpacity>
+                  {!hideSendMessage && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.messageButton]}
+                      onPress={handleSendMessage}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.actionButtonText}>ENVIAR MENSAGEM</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={[styles.actionButton, styles.cancelButton]}
                     onPress={handleCancel}

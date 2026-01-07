@@ -124,7 +124,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     
     // Converter requisição Node.js para Fastify
     const url = req.url || '/';
-    const method = req.method || 'GET';
+    const method = (req.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS' | 'HEAD';
     
     // Ler body se existir (apenas para métodos que podem ter body)
     let body: Buffer | undefined;
@@ -152,26 +152,39 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const query = getQueryParams(url);
     
     // Processar requisição usando Fastify inject
+    // Type assertion para compatibilidade com tipos do Fastify
+    type FastifyInjectResponse = {
+      statusCode: number;
+      headers: Record<string, string | string[]>;
+      body: string | Buffer;
+      payload: string | Buffer;
+    };
+    
     const response = await fastifyInstance.inject({
-      method,
+      method: method as any, // Fastify aceita string como método HTTP
       url: path,
       headers,
       payload: body,
       query,
-    });
+    }) as unknown as FastifyInjectResponse;
 
     // Preparar headers da resposta
     const responseHeaders: Record<string, string> = {};
-    Object.keys(response.headers).forEach((key) => {
-      const value = response.headers[key];
-      if (value) {
-        responseHeaders[key] = Array.isArray(value) ? value.join(', ') : value;
-      }
-    });
+    if (response.headers) {
+      Object.keys(response.headers).forEach((key) => {
+        const value = response.headers[key];
+        if (value) {
+          responseHeaders[key] = Array.isArray(value) ? value.join(', ') : String(value);
+        }
+      });
+    }
 
     // Enviar resposta
-    res.writeHead(response.statusCode, responseHeaders);
-    res.end(response.rawPayload || response.body);
+    // Fastify inject retorna um objeto com statusCode (number) e body/payload (string | Buffer)
+    const statusCode = response.statusCode || 200;
+    const responseBody = response.body || response.payload || '';
+    res.writeHead(statusCode, responseHeaders);
+    res.end(typeof responseBody === 'string' ? responseBody : Buffer.from(responseBody));
   } catch (error) {
     console.error('Error in serverless function:', error);
     if (!res.headersSent) {

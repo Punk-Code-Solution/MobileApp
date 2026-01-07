@@ -65,10 +65,18 @@ export const API_ENDPOINTS = {
     BASE: '/appointments',
     ME: '/appointments/me',
     CANCEL: (id: string) => `/appointments/${id}/cancel`,
+    RATE: (id: string) => `/appointments/${id}/rate`,
   },
   MESSAGES: {
     BASE: '/messages',
     CONVERSATIONS: '/messages/conversations',
+    BY_APPOINTMENT: (appointmentId: string) => `/messages/appointments/${appointmentId}/conversation`,
+  },
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    ME: '/notifications/me',
+    MARK_READ: (id: string) => `/notifications/${id}/read`,
+    MARK_ALL_READ: '/notifications/read-all',
   },
 } as const;
 

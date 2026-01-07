@@ -120,7 +120,9 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
           <Text style={styles.specialty}>{specialtyName}</Text>
           <View style={styles.ratingContainer}>
             <Text style={styles.ratingIcon}>⭐</Text>
-            <Text style={styles.rating}>4.5</Text>
+            <Text style={styles.rating}>
+              {item.averageRating ? item.averageRating.toFixed(1) : '0.0'}
+            </Text>
           </View>
           <Text style={styles.price}>R$ {priceFormatted}</Text>
         </View>

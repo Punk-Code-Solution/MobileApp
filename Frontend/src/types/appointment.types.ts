@@ -13,6 +13,8 @@ export interface Professional {
       name: string;
     };
   }>;
+  averageRating?: number; // Média de avaliações (0-5)
+  reviewsCount?: number; // Quantidade de avaliações
 }
 
 export interface CreateAppointmentDto {

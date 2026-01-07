@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
+import { appointmentService } from '../services/api/appointment.service';
 
 interface RateAppointmentScreenProps {
   appointment: Appointment;
@@ -43,11 +44,11 @@ export default function RateAppointmentScreen({
 
     setLoading(true);
     try {
-      // TODO: Implementar chamada à API para salvar avaliação
-      // await appointmentService.rateAppointment(token, appointment.id, { rating, comment });
-      
-      // Simulação de sucesso
-      await new Promise<void>((resolve) => setTimeout(() => resolve(), 1500));
+      // Chamada à API para salvar avaliação
+      await appointmentService.rateAppointment(token, appointment.id, {
+        rating,
+        comment: comment.trim() || undefined,
+      });
 
       Alert.alert('Sucesso! ✅', 'Sua avaliação foi enviada com sucesso.', [
         {
@@ -63,7 +64,11 @@ export default function RateAppointmentScreen({
       ]);
     } catch (error: any) {
       console.error('Erro ao avaliar consulta:', error);
-      Alert.alert('Erro', 'Não foi possível enviar sua avaliação. Tente novamente.');
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'Não foi possível enviar sua avaliação. Tente novamente.';
+      Alert.alert('Erro', errorMessage);
     } finally {
       setLoading(false);
     }

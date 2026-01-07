@@ -7,18 +7,27 @@ type TabType = 'home' | 'messages' | 'appointments' | 'profile';
 interface BottomNavigationProps {
   activeTab: TabType;
   onTabPress: (tab: TabType) => void;
+  unreadMessagesCount?: number;
+  userRole?: 'PATIENT' | 'PROFESSIONAL';
 }
 
 export default function BottomNavigation({
   activeTab,
   onTabPress,
+  unreadMessagesCount = 0,
+  userRole,
 }: BottomNavigationProps) {
-  const tabs: { id: TabType; label: string; icon: string }[] = [
+  const allTabs: { id: TabType; label: string; icon: string }[] = [
     { id: 'home', label: 'INÍCIO', icon: '🏠' },
     { id: 'messages', label: 'MENSAGENS', icon: '💬' },
     { id: 'appointments', label: 'CONSULTAS', icon: '📋' },
     { id: 'profile', label: 'PERFIL', icon: '👤' },
   ];
+  
+  // Filtrar tabs: profissionais não veem a aba "home"
+  const tabs = userRole === 'PROFESSIONAL' 
+    ? allTabs.filter(tab => tab.id !== 'home')
+    : allTabs;
 
   return (
     <View style={styles.container}>
@@ -29,7 +38,16 @@ export default function BottomNavigation({
           onPress={() => onTabPress(tab.id)}
           activeOpacity={0.7}
         >
-          <Text style={styles.icon}>{tab.icon}</Text>
+          <View style={styles.iconContainer}>
+            <Text style={styles.icon}>{tab.icon}</Text>
+            {tab.id === 'messages' && unreadMessagesCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                </Text>
+              </View>
+            )}
+          </View>
           <Text style={[styles.label, activeTab === tab.id && styles.labelActive]}>
             {tab.label}
           </Text>
@@ -58,9 +76,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconContainer: {
+    position: 'relative',
+    marginBottom: 4,
+  },
   icon: {
     fontSize: 24,
-    marginBottom: 4,
+  },
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -12,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    borderWidth: 2,
+    borderColor: colors.navigation.darkBlue,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   label: {
     fontSize: 11,

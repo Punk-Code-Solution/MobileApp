@@ -10,21 +10,24 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
+import MedicalHistoryScreen from './MedicalHistoryScreen';
 import { appointmentService } from '../services/api/appointment.service';
 
 interface MyAppointmentsProps {
   token: string;
   onBack?: () => void;
-  onNavigateToChat?: (professionalId: string, professionalName: string, professionalAvatar?: string) => void;
+  onNavigateToChat?: (conversationIdOrProfessionalId: string, professionalName: string, professionalAvatar?: string) => void;
   onShowNotifications?: () => void;
+  unreadNotificationsCount?: number;
 }
 
 type TabType = 'upcoming' | 'history';
+type ScreenState = 'list' | 'history';
 
 // Função para formatar data (DD/MM/YYYY)
 const formatDate = (dateString: string): string => {
@@ -43,13 +46,14 @@ const formatTime = (dateString: string): string => {
   return `${hours}:${minutes}`;
 };
 
-export default function MyAppointments({ token, onBack, onNavigateToChat, onShowNotifications }: MyAppointmentsProps) {
+export default function MyAppointments({ token, onBack, onNavigateToChat, onShowNotifications, unreadNotificationsCount = 0 }: MyAppointmentsProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [hasAppointments, setHasAppointments] = useState(false);
+  const [screenState, setScreenState] = useState<ScreenState>('list');
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -175,6 +179,17 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
     );
   };
 
+  // Tela de histórico detalhado
+  if (screenState === 'history') {
+    return (
+      <MedicalHistoryScreen
+        token={token}
+        onBack={() => setScreenState('list')}
+        onNavigateToChat={onNavigateToChat}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -203,9 +218,13 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
             onPress={onShowNotifications}
           >
             <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationBadgeText}>2</Text>
-            </View>
+            {unreadNotificationsCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -228,6 +247,21 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
           <TouchableOpacity
             style={[styles.tab, activeTab === 'history' && styles.tabActive]}
             onPress={() => setActiveTab('history')}
+            onLongPress={() => {
+              // Long press para abrir tela detalhada
+              const historyAppointments = appointments.filter((apt: Appointment) => {
+                if (!apt || !apt.id) return false;
+                const now = new Date();
+                const appointmentDate = new Date(apt.scheduledAt);
+                const isCompleted = apt.status === 'COMPLETED';
+                const isCanceled = apt.status === 'CANCELED';
+                const isPast = appointmentDate < now;
+                return isCompleted || isCanceled || isPast;
+              });
+              if (historyAppointments.length > 0) {
+                setScreenState('history');
+              }
+            }}
             activeOpacity={0.8}
           >
             <Text
@@ -244,7 +278,18 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
 
       {/* Lista de Consultas */}
       <View style={styles.content}>
-        <Text style={styles.title}>Minhas consultas</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Minhas consultas</Text>
+          {activeTab === 'history' && filteredAppointments.length > 0 && (
+            <TouchableOpacity
+              style={styles.detailButton}
+              onPress={() => setScreenState('history')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.detailButtonText}>Ver Detalhado</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         {/* Validação: Exibir mensagem se não houver consultas vinculadas */}
         {!hasAppointments && !loading && (
           <View style={styles.validationMessage}>
@@ -302,12 +347,15 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
             fetchAppointments();
             setSelectedAppointment(null);
           }}
-          onSendMessage={(professionalId, professionalName, professionalAvatar) => {
+          onSendMessage={(conversationId, professionalId, professionalName, professionalAvatar) => {
             if (onNavigateToChat) {
-              onNavigateToChat(professionalId, professionalName, professionalAvatar);
+              // Se tiver conversationId, usar ele; senão usar professionalId (fallback)
+              const idToUse = conversationId || professionalId;
+              onNavigateToChat(idToUse, professionalName, professionalAvatar);
             }
             setSelectedAppointment(null);
           }}
+          hideSendMessage={activeTab === 'history'}
         />
       )}
     </SafeAreaView>
@@ -398,12 +446,29 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 24,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text.primary,
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    flex: 1,
+  },
+  detailButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  detailButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   list: {
     paddingHorizontal: 20,
