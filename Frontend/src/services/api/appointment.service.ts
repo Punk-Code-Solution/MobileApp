@@ -148,7 +148,7 @@ export const appointmentService = {
     token: string,
     appointmentId: string,
     data: { rating: number; comment?: string }
-  ): Promise<void> {
+  ): Promise<any> {
     const response = await api.post<{ data: any; statusCode: number }>(
       API_ENDPOINTS.APPOINTMENTS.RATE(appointmentId),
       data,
@@ -160,7 +160,9 @@ export const appointmentService = {
     );
     // Invalidar cache após avaliar
     await removeCache(CACHE_KEYS.APPOINTMENTS);
-    return response.data.data;
+    // O TransformInterceptor envolve a resposta em { data, statusCode }
+    // Usar fallback para garantir compatibilidade
+    return response.data.data || response.data;
   },
 };
 
