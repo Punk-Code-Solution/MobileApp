@@ -94,8 +94,17 @@ export default function AppointmentBooking({
   const priceFormatted = professional.price ? Number(professional.price).toFixed(2) : '0.00';
 
   const handleConfirm = async () => {
+    // Proteção contra múltiplos cliques
+    if (loading) {
+      return;
+    }
+
     if (!selectedDate || !selectedTime) {
-      Alert.alert('Atenção', 'Por favor, selecione uma data e um horário');
+      try {
+        Alert.alert('Atenção', 'Por favor, selecione uma data e um horário');
+      } catch (error) {
+        console.error('Erro ao exibir alert de validação:', error);
+      }
       return;
     }
 
@@ -108,16 +117,24 @@ export default function AppointmentBooking({
     const minTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // Mínimo 2 horas no futuro
     
     if (appointmentDateTime < minTime) {
-      Alert.alert(
-        'Horário inválido',
-        'Por favor, selecione um horário com pelo menos 2 horas de antecedência'
-      );
+      try {
+        Alert.alert(
+          'Horário inválido',
+          'Por favor, selecione um horário com pelo menos 2 horas de antecedência'
+        );
+      } catch (error) {
+        console.error('Erro ao exibir alert de horário inválido:', error);
+      }
       return;
     }
 
     // Validar professionalId
     if (!professional.id || typeof professional.id !== 'string') {
-      Alert.alert('Erro', 'ID do profissional inválido. Tente novamente.');
+      try {
+        Alert.alert('Erro', 'ID do profissional inválido. Tente novamente.');
+      } catch (error) {
+        console.error('Erro ao exibir alert de ID inválido:', error);
+      }
       return;
     }
 
@@ -137,13 +154,30 @@ export default function AppointmentBooking({
         scheduledAt: scheduledAtISO,
       };
 
-      console.log('Enviando dados do agendamento:', JSON.stringify(appointmentData, null, 2));
-      console.log('Data formatada:', scheduledAtISO);
-      console.log('Professional ID:', professional.id);
+      // Logs protegidos contra erros de serialização
+      try {
+        console.log('Enviando dados do agendamento:', JSON.stringify(appointmentData, null, 2));
+        console.log('Data formatada:', scheduledAtISO);
+        console.log('Professional ID:', professional.id);
+      } catch (logError) {
+        console.warn('Erro ao logar dados (não crítico):', logError);
+      }
 
-      const appointment = await appointmentService.createAppointment(token, appointmentData);
+      let appointment;
+      try {
+        appointment = await appointmentService.createAppointment(token, appointmentData);
+      } catch (apiError: any) {
+        // Re-throw para ser tratado no catch externo
+        throw apiError;
+      }
 
-      console.log('Agendamento criado:', JSON.stringify(appointment, null, 2));
+      // Log protegido
+      try {
+        console.log('Agendamento criado:', JSON.stringify(appointment, null, 2));
+      } catch (logError) {
+        console.warn('Erro ao logar agendamento (não crítico):', logError);
+        console.log('Agendamento criado com ID:', appointment?.id);
+      }
       
       // Verificar se appointment é válido
       if (!appointment || !appointment.id) {
@@ -179,34 +213,76 @@ export default function AppointmentBooking({
       requestAnimationFrame(() => {
         if (!isMountedRef.current) return;
         
-        Alert.alert(
-          'Sucesso! ✅',
-          `Consulta agendada com ${savedProfessionalName} para ${formatDate(savedDate)} às ${savedTime}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Usar um pequeno delay para garantir que o Alert foi completamente fechado
-                setTimeout(() => {
-                  if (isMountedRef.current && onSuccess) {
-                    try {
-                      onSuccess();
-                    } catch (error) {
-                      console.error('Erro ao chamar onSuccess:', error);
+        try {
+          // Validar valores antes de usar no Alert
+          const message = `Consulta agendada com ${savedProfessionalName || 'o profissional'} para ${formatDate(savedDate)} às ${savedTime || 'horário selecionado'}`;
+          
+          Alert.alert(
+            'Sucesso! ✅',
+            message,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Usar um pequeno delay para garantir que o Alert foi completamente fechado
+                  setTimeout(() => {
+                    if (isMountedRef.current && onSuccess) {
+                      try {
+                        onSuccess();
+                      } catch (error) {
+                        console.error('Erro ao chamar onSuccess:', error);
+                        // Tentar navegar de volta mesmo com erro
+                        if (isMountedRef.current) {
+                          try {
+                            onSuccess();
+                          } catch (retryError) {
+                            console.error('Erro ao tentar novamente onSuccess:', retryError);
+                          }
+                        }
+                      }
                     }
-                  }
-                }, 200);
+                  }, 300); // Aumentado para 300ms para garantir
+                },
               },
-            },
-          ],
-          { cancelable: false }
-        );
+            ],
+            { cancelable: false }
+          );
+        } catch (alertError) {
+          console.error('Erro crítico ao exibir Alert de sucesso:', alertError);
+          // Tentar chamar onSuccess mesmo sem mostrar o alert
+          setTimeout(() => {
+            if (isMountedRef.current && onSuccess) {
+              try {
+                onSuccess();
+              } catch (error) {
+                console.error('Erro ao chamar onSuccess após erro no Alert:', error);
+              }
+            }
+          }, 100);
+        }
       });
     } catch (error: any) {
-      console.error('Erro ao agendar:', error);
-      console.error('Erro completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-      console.error('Status code:', error.response?.status);
-      console.error('Response data:', error.response?.data);
+      // Logs protegidos contra erros de serialização
+      try {
+        console.error('Erro ao agendar:', error);
+        if (error && typeof error === 'object') {
+          try {
+            console.error('Erro completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+          } catch (stringifyError) {
+            console.error('Erro ao serializar erro completo:', stringifyError);
+            console.error('Tipo do erro:', typeof error);
+            console.error('Mensagem do erro:', error.message);
+          }
+        }
+        console.error('Status code:', error?.response?.status);
+        try {
+          console.error('Response data:', error?.response?.data);
+        } catch (dataError) {
+          console.error('Erro ao logar response data:', dataError);
+        }
+      } catch (logError) {
+        console.error('Erro crítico ao logar erro:', logError);
+      }
       
       if (!isMountedRef.current) return;
       
@@ -267,8 +343,16 @@ export default function AppointmentBooking({
       }
       
       if (isMountedRef.current) {
-        Alert.alert('Erro ao Agendar', errorMessage);
-        setLoading(false);
+        try {
+          Alert.alert('Erro ao Agendar', errorMessage);
+        } catch (alertError) {
+          console.error('Erro crítico ao exibir alert:', alertError);
+        }
+        try {
+          setLoading(false);
+        } catch (stateError) {
+          console.error('Erro ao atualizar estado loading:', stateError);
+        }
       }
     }
   };

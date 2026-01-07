@@ -44,11 +44,31 @@ export const appointmentService = {
    */
   async createAppointment(token: string, data: CreateAppointmentDto): Promise<Appointment> {
     try {
-      const response = await api.post<{ data: Appointment; statusCode: number }>(API_ENDPOINTS.APPOINTMENTS.BASE, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Validar dados antes de enviar
+      if (!data || !data.professionalId || !data.scheduledAt) {
+        throw new Error('Dados de agendamento inválidos');
+      }
+
+      // Validar token
+      if (!token || typeof token !== 'string') {
+        throw new Error('Token de autenticação inválido');
+      }
+
+      const response = await api.post<{ data: Appointment; statusCode: number }>(
+        API_ENDPOINTS.APPOINTMENTS.BASE, 
+        data, 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 30000, // 30 segundos de timeout
+        }
+      );
+      
+      // Verificar se response existe
+      if (!response || !response.data) {
+        throw new Error('Resposta vazia do servidor');
+      }
       
       // O TransformInterceptor envolve a resposta em { data, statusCode }
       const appointment = response.data.data || response.data;
@@ -58,21 +78,48 @@ export const appointmentService = {
         throw new Error('Resposta inválida do servidor');
       }
       
-      // Normalizar datas se necessário
-      if (appointment.scheduledAt && typeof appointment.scheduledAt === 'string') {
-        appointment.scheduledAt = appointment.scheduledAt;
-      }
-      if (appointment.createdAt && typeof appointment.createdAt === 'string') {
-        appointment.createdAt = appointment.createdAt;
+      // Validar que appointment tem id
+      if (!appointment.id || typeof appointment.id !== 'string') {
+        throw new Error('Agendamento criado sem ID válido');
       }
       
-      // Invalidar cache de appointments após criar novo
-      await removeCache(CACHE_KEYS.APPOINTMENTS);
+      // Normalizar datas se necessário (sem modificar se já estiver correto)
+      if (appointment.scheduledAt && typeof appointment.scheduledAt === 'string') {
+        // Apenas validar, não modificar
+        const date = new Date(appointment.scheduledAt);
+        if (isNaN(date.getTime())) {
+          console.warn('Data scheduledAt inválida na resposta:', appointment.scheduledAt);
+        }
+      }
+      if (appointment.createdAt && typeof appointment.createdAt === 'string') {
+        // Apenas validar, não modificar
+        const date = new Date(appointment.createdAt);
+        if (isNaN(date.getTime())) {
+          console.warn('Data createdAt inválida na resposta:', appointment.createdAt);
+        }
+      }
+      
+      // Invalidar cache de appointments após criar novo (com proteção)
+      try {
+        await removeCache(CACHE_KEYS.APPOINTMENTS);
+      } catch (cacheError) {
+        console.warn('Erro ao invalidar cache (não crítico):', cacheError);
+        // Não propagar erro de cache
+      }
 
       return appointment as Appointment;
     } catch (error: any) {
       console.error('Erro em createAppointment:', error);
-      console.error('Response data:', error.response?.data);
+      
+      // Proteger contra erros de serialização
+      try {
+        console.error('Response data:', error.response?.data);
+        console.error('Status:', error.response?.status);
+      } catch (logError) {
+        console.error('Erro ao logar detalhes do erro:', logError);
+      }
+      
+      // Re-throw o erro para ser tratado no componente
       throw error;
     }
   },
@@ -113,7 +160,7 @@ export const appointmentService = {
     );
     // Invalidar cache após avaliar
     await removeCache(CACHE_KEYS.APPOINTMENTS);
-    return response.data;
+    return response.data.data;
   },
 };
 
