@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -81,6 +81,13 @@ export default function AppointmentBooking({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isMountedRef = useRef(true);
+  
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   
   const availableDays = generateNextDays();
   const specialtyName = professional.specialties?.[0]?.specialty?.name || 'Especialista';
@@ -125,40 +132,65 @@ export default function AppointmentBooking({
       // Verificar se appointment é válido
       if (!appointment || !appointment.id) {
         console.error('Resposta inválida do servidor:', appointment);
-        Alert.alert('Erro', 'Resposta inválida do servidor. Tente novamente.');
-        setLoading(false);
+        if (isMountedRef.current) {
+          Alert.alert('Erro', 'Resposta inválida do servidor. Tente novamente.');
+          setLoading(false);
+        }
         return;
       }
       
       // Garantir que selectedDate e selectedTime existem antes de usar
       if (!selectedDate || !selectedTime) {
         console.error('Estado inválido: selectedDate ou selectedTime é null');
-        Alert.alert('Erro', 'Erro interno. Tente novamente.');
-        setLoading(false);
+        if (isMountedRef.current) {
+          Alert.alert('Erro', 'Erro interno. Tente novamente.');
+          setLoading(false);
+        }
         return;
       }
       
-      // Resetar loading antes de mostrar o alert
-      setLoading(false);
+      // Salvar valores antes de resetar estado
+      const savedDate = selectedDate;
+      const savedTime = selectedTime;
+      const savedProfessionalName = professional.fullName;
       
-      Alert.alert(
-        'Sucesso! ✅',
-        `Consulta agendada com ${professional.fullName} para ${formatDate(selectedDate)} às ${selectedTime}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Usar setTimeout para garantir que o estado seja atualizado antes de navegar
-              setTimeout(() => {
-                onSuccess();
-              }, 100);
+      // Resetar loading antes de mostrar o alert
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+      
+      // Usar requestAnimationFrame para garantir que o estado seja atualizado
+      requestAnimationFrame(() => {
+        if (!isMountedRef.current) return;
+        
+        Alert.alert(
+          'Sucesso! ✅',
+          `Consulta agendada com ${savedProfessionalName} para ${formatDate(savedDate)} às ${savedTime}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Usar um pequeno delay para garantir que o Alert foi completamente fechado
+                setTimeout(() => {
+                  if (isMountedRef.current && onSuccess) {
+                    try {
+                      onSuccess();
+                    } catch (error) {
+                      console.error('Erro ao chamar onSuccess:', error);
+                    }
+                  }
+                }, 200);
+              },
             },
-          },
-        ]
-      );
+          ],
+          { cancelable: false }
+        );
+      });
     } catch (error: any) {
       console.error('Erro ao agendar:', error);
       console.error('Erro completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      
+      if (!isMountedRef.current) return;
       
       // Tratar erro de rede
       if (!error.response) {
@@ -166,7 +198,9 @@ export default function AppointmentBooking({
           'Sem Conexão',
           'Verifique sua conexão com a internet e tente novamente.'
         );
-        setLoading(false);
+        if (isMountedRef.current) {
+          setLoading(false);
+        }
         return;
       }
       
@@ -189,8 +223,10 @@ export default function AppointmentBooking({
         console.error('Erro ao parsear mensagem de erro:', parseError);
       }
       
-      Alert.alert('Erro', errorMessage);
-      setLoading(false);
+      if (isMountedRef.current) {
+        Alert.alert('Erro', errorMessage);
+        setLoading(false);
+      }
     }
   };
 

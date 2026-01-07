@@ -74,9 +74,15 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
   };
 
   const handleBookingSuccess = () => {
-    setScreenState('home');
-    setSelectedProfessional(null);
-    fetchDoctors();
+    // Usar setTimeout para garantir que a navegação aconteça de forma segura
+    setTimeout(() => {
+      setScreenState('home');
+      setSelectedProfessional(null);
+      // Chamar fetchDoctors após um pequeno delay para garantir que o estado foi atualizado
+      setTimeout(() => {
+        fetchDoctors();
+      }, 100);
+    }, 0);
   };
 
   const handleBookingCancel = () => {
