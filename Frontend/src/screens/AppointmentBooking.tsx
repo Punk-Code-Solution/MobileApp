@@ -115,15 +115,31 @@ export default function AppointmentBooking({
       return;
     }
 
+    // Validar professionalId
+    if (!professional.id || typeof professional.id !== 'string') {
+      Alert.alert('Erro', 'ID do profissional inválido. Tente novamente.');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Garantir que a data está em formato ISO 8601 válido
+      const scheduledAtISO = appointmentDateTime.toISOString();
+      
+      // Validar formato antes de enviar
+      if (!scheduledAtISO || isNaN(appointmentDateTime.getTime())) {
+        throw new Error('Data/hora inválida');
+      }
+
       const appointmentData: CreateAppointmentDto = {
-        professionalId: professional.id,
-        scheduledAt: appointmentDateTime.toISOString(),
+        professionalId: professional.id.trim(),
+        scheduledAt: scheduledAtISO,
       };
 
       console.log('Enviando dados do agendamento:', JSON.stringify(appointmentData, null, 2));
+      console.log('Data formatada:', scheduledAtISO);
+      console.log('Professional ID:', professional.id);
 
       const appointment = await appointmentService.createAppointment(token, appointmentData);
 
@@ -189,42 +205,69 @@ export default function AppointmentBooking({
     } catch (error: any) {
       console.error('Erro ao agendar:', error);
       console.error('Erro completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      console.error('Status code:', error.response?.status);
+      console.error('Response data:', error.response?.data);
       
       if (!isMountedRef.current) return;
       
       // Tratar erro de rede
       if (!error.response) {
-        Alert.alert(
-          'Sem Conexão',
-          'Verifique sua conexão com a internet e tente novamente.'
-        );
         if (isMountedRef.current) {
+          Alert.alert(
+            'Sem Conexão',
+            'Verifique sua conexão com a internet e tente novamente.'
+          );
           setLoading(false);
         }
         return;
       }
       
-      // Extrair mensagem de erro
+      // Extrair mensagem de erro de forma mais robusta
       let errorMessage = 'Não foi possível agendar a consulta. Tente novamente.';
       
       try {
-        if (error.response?.data) {
-          // O TransformInterceptor envolve erros também
-          const errorData = error.response.data.data || error.response.data;
-          if (typeof errorData === 'object' && errorData !== null) {
-            errorMessage = errorData.message || errorData.error || errorMessage;
+        const statusCode = error.response?.status;
+        
+        // Tratar diferentes tipos de erro
+        if (statusCode === 400) {
+          // Bad Request - erro de validação
+          const errorData = error.response.data;
+          
+          // Tentar extrair mensagem de diferentes formatos
+          if (errorData?.data?.message) {
+            errorMessage = errorData.data.message;
+          } else if (errorData?.message) {
+            errorMessage = errorData.message;
+          } else if (errorData?.data?.error) {
+            errorMessage = errorData.data.error;
+          } else if (errorData?.error) {
+            errorMessage = errorData.error;
+          } else if (Array.isArray(errorData?.message)) {
+            // Se for array de mensagens de validação
+            errorMessage = errorData.message.join(', ');
           } else if (typeof errorData === 'string') {
             errorMessage = errorData;
+          } else {
+            errorMessage = 'Dados inválidos. Verifique a data e horário selecionados.';
           }
+        } else if (statusCode === 401) {
+          errorMessage = 'Sessão expirada. Por favor, faça login novamente.';
+        } else if (statusCode === 403) {
+          errorMessage = 'Você não tem permissão para realizar esta ação.';
+        } else if (statusCode === 404) {
+          errorMessage = 'Profissional não encontrado.';
+        } else if (statusCode >= 500) {
+          errorMessage = 'Erro no servidor. Tente novamente mais tarde.';
         } else if (error.message) {
           errorMessage = error.message;
         }
       } catch (parseError) {
         console.error('Erro ao parsear mensagem de erro:', parseError);
+        errorMessage = 'Erro ao processar resposta do servidor.';
       }
       
       if (isMountedRef.current) {
-        Alert.alert('Erro', errorMessage);
+        Alert.alert('Erro ao Agendar', errorMessage);
         setLoading(false);
       }
     }
