@@ -138,6 +138,9 @@ export default function AppointmentBooking({
         return;
       }
       
+      // Resetar loading antes de mostrar o alert
+      setLoading(false);
+      
       Alert.alert(
         'Sucesso! ✅',
         `Consulta agendada com ${professional.fullName} para ${formatDate(selectedDate)} às ${selectedTime}`,
@@ -145,8 +148,10 @@ export default function AppointmentBooking({
           {
             text: 'OK',
             onPress: () => {
-              setLoading(false);
-              onSuccess();
+              // Usar setTimeout para garantir que o estado seja atualizado antes de navegar
+              setTimeout(() => {
+                onSuccess();
+              }, 100);
             },
           },
         ]

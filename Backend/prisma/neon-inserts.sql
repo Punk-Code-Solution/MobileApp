@@ -12,18 +12,21 @@
 -- ============================================
 -- ESPECIALIDADES
 -- ============================================
+-- Nota: Specialty.id é SERIAL (auto-incremento)
+-- Os IDs serão gerados automaticamente: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+-- Esses IDs são referenciados em ProfessionalSpecialty abaixo
 
 INSERT INTO "Specialty" ("name") VALUES
-    ('Cardiologia'),
-    ('Dermatologia'),
-    ('Pediatria'),
-    ('Psiquiatria'),
-    ('Ortopedia'),
-    ('Neurologia'),
-    ('Ginecologia'),
-    ('Oftalmologia'),
-    ('Clínica Geral'),
-    ('Endocrinologia')
+    ('Cardiologia'),      -- ID: 1
+    ('Dermatologia'),     -- ID: 2
+    ('Pediatria'),        -- ID: 3
+    ('Psiquiatria'),      -- ID: 4
+    ('Ortopedia'),        -- ID: 5
+    ('Neurologia'),       -- ID: 6
+    ('Ginecologia'),      -- ID: 7
+    ('Oftalmologia'),     -- ID: 8
+    ('Clínica Geral'),    -- ID: 9
+    ('Endocrinologia')    -- ID: 10
 ON CONFLICT DO NOTHING;
 
 -- ============================================
@@ -76,16 +79,16 @@ INSERT INTO "ProfessionalSpecialty" ("professionalId", "specialtyId") VALUES
     ('00000000-0000-0000-0000-000000000102', 3),
     -- Dra. Ana Costa - Psiquiatria
     ('00000000-0000-0000-0000-000000000103', 4)
-ON CONFLICT DO NOTHING;
+ON CONFLICT ("professionalId", "specialtyId") DO NOTHING;
 
 -- ============================================
 -- PACIENTES
 -- ============================================
 
 INSERT INTO "Patient" ("id", "userId", "fullName", "cpf", "phone", "birthDate", "stripeCustomerId") VALUES
-    ('00000000-0000-0000-0000-000000000200', '00000000-0000-0000-0000-000000000020', 'Pedro Alves', '12345678900', '(11) 98765-4321', '1990-05-15 00:00:00', NULL),
-    ('00000000-0000-0000-0000-000000000201', '00000000-0000-0000-0000-000000000021', 'Julia Ferreira', '23456789011', '(21) 97654-3210', '1985-08-22 00:00:00', NULL),
-    ('00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000022', 'Lucas Rodrigues', '34567890122', '(31) 96543-2109', '1992-11-30 00:00:00', NULL)
+    ('00000000-0000-0000-0000-000000000200', '00000000-0000-0000-0000-000000000020', 'Pedro Alves', '12345678900', '(11) 98765-4321', TIMESTAMP '1990-05-15 00:00:00', NULL),
+    ('00000000-0000-0000-0000-000000000201', '00000000-0000-0000-0000-000000000021', 'Julia Ferreira', '23456789011', '(21) 97654-3210', TIMESTAMP '1985-08-22 00:00:00', NULL),
+    ('00000000-0000-0000-0000-000000000202', '00000000-0000-0000-0000-000000000022', 'Lucas Rodrigues', '34567890122', '(31) 96543-2109', TIMESTAMP '1992-11-30 00:00:00', NULL)
 ON CONFLICT ("id") DO NOTHING;
 
 -- ============================================

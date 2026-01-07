@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from './src/services/api/auth.service';
 import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -13,6 +14,9 @@ import EmailVerificationSuccessScreen from './src/screens/EmailVerificationSucce
 
 type AuthScreen = 'login' | 'register' | 'emailVerification' | 'emailVerificationSuccess' | 'forgotPassword' | 'resetPassword' | 'resetSuccess';
 
+const TOKEN_KEY = '@telemedicina:token';
+const USER_DATA_KEY = '@telemedicina:userData';
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [token, setToken] = useState<string | null>(null);
@@ -20,9 +24,34 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>('login');
   const [registerEmail, setRegisterEmail] = useState('');
+  const [isLoadingToken, setIsLoadingToken] = useState(true);
 
-  // Se ainda está mostrando splash, exibir splash screen
-  if (showSplash) {
+  // Recuperar token e dados do usuário ao iniciar o app
+  useEffect(() => {
+    const loadStoredAuth = async () => {
+      try {
+        const [storedToken, storedUserData] = await Promise.all([
+          AsyncStorage.getItem(TOKEN_KEY),
+          AsyncStorage.getItem(USER_DATA_KEY),
+        ]);
+
+        if (storedToken && storedUserData) {
+          setToken(storedToken);
+          setUserData(JSON.parse(storedUserData));
+          console.log('Token e dados do usuário recuperados do AsyncStorage');
+        }
+      } catch (error) {
+        console.error('Erro ao recuperar token do AsyncStorage:', error);
+      } finally {
+        setIsLoadingToken(false);
+      }
+    };
+
+    loadStoredAuth();
+  }, []);
+
+  // Se ainda está mostrando splash ou carregando token, exibir splash screen
+  if (showSplash || isLoadingToken) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
@@ -57,9 +86,15 @@ export default function App() {
         return;
       }
       
+      // Salvar token e dados do usuário no AsyncStorage
+      await AsyncStorage.multiSet([
+        [TOKEN_KEY, token],
+        [USER_DATA_KEY, JSON.stringify(response.user)],
+      ]);
+
       setToken(token);
       setUserData(response.user);
-      console.log('Token definido no estado, navegando para HomeScreen...');
+      console.log('Token e dados do usuário salvos no AsyncStorage');
     } catch (error: any) {
       console.error('Erro login:', error);
       const msg = error.response?.data?.message || error.message || 'Falha ao conectar ao servidor';
@@ -69,7 +104,14 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Remover token e dados do usuário do AsyncStorage
+    try {
+      await AsyncStorage.multiRemove([TOKEN_KEY, USER_DATA_KEY]);
+    } catch (error) {
+      console.error('Erro ao remover token do AsyncStorage:', error);
+    }
+    
     setToken(null);
     setUserData(null);
     setCurrentScreen('login');
