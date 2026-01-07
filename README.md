@@ -23,10 +23,12 @@ Sistema completo de telemedicina desenvolvido com React Native (mobile) e NestJS
 O **Healtec** é uma plataforma de telemedicina que conecta pacientes a profissionais de saúde de forma rápida e segura. O sistema permite:
 
 - **Agendamento de Consultas**: Pacientes podem buscar e agendar consultas com profissionais de saúde
-- **Comunicação**: Sistema de mensagens e videochamadas entre pacientes e profissionais
-- **Gestão de Agendamentos**: Visualização de consultas agendadas, histórico e detalhes
-- **Perfis de Usuário**: Gerenciamento de perfis para pacientes e profissionais
-- **Autenticação Segura**: Sistema de autenticação com JWT
+- **Comunicação em Tempo Real**: Sistema completo de mensagens e chat entre pacientes e profissionais
+- **Gestão de Agendamentos**: Visualização de consultas agendadas, histórico detalhado e cancelamento
+- **Avaliações**: Sistema de avaliação de consultas com ratings e comentários
+- **Notificações**: Sistema de notificações em tempo real para eventos importantes
+- **Perfis Diferenciados**: Interface personalizada para pacientes e profissionais
+- **Autenticação Segura**: Sistema de autenticação com JWT e validação de tipo de usuário
 
 ## 🛠 Tecnologias
 
@@ -36,6 +38,8 @@ O **Healtec** é uma plataforma de telemedicina que conecta pacientes a profissi
 - **Axios** 1.13.2 - Cliente HTTP
 - **React Native Linear Gradient** 2.8.3 - Gradientes
 - **React Native Safe Area Context** 5.5.2 - Áreas seguras
+- **AsyncStorage** - Cache local
+- **React Native Reanimated** - Animações
 
 ### Backend
 - **NestJS** 11.0.1 - Framework Node.js
@@ -45,14 +49,17 @@ O **Healtec** é uma plataforma de telemedicina que conecta pacientes a profissi
 - **JWT** - Autenticação
 - **Bcrypt** 6.0.0 - Hash de senhas
 - **Passport** 0.7.0 - Estratégias de autenticação
+- **Fastify** - Servidor HTTP (compatível com Vercel)
 
 ## ✨ Funcionalidades
 
 ### Autenticação
-- ✅ Login e registro de usuários
+- ✅ Login e registro de usuários (Paciente e Profissional)
+- ✅ Validação de tipo de usuário no login
 - ✅ Recuperação de senha
 - ✅ Verificação de email
 - ✅ Autenticação JWT
+- ✅ Diferenciação de interface por tipo de usuário
 
 ### Agendamentos
 - ✅ Busca de profissionais por especialidade
@@ -60,54 +67,79 @@ O **Healtec** é uma plataforma de telemedicina que conecta pacientes a profissi
 - ✅ Visualização de agendamentos (próximos e histórico)
 - ✅ Cancelamento de consultas
 - ✅ Detalhes completos da consulta
+- ✅ Avaliação de consultas (rating 1-5 + comentário)
+- ✅ Cálculo automático de média de avaliações por profissional
 
 ### Comunicação
-- ✅ Sistema de mensagens
+- ✅ Sistema completo de mensagens
 - ✅ Chat em tempo real
-- ✅ Chamadas de áudio (em desenvolvimento)
-- ✅ Videochamadas (em desenvolvimento)
+- ✅ Conversas vinculadas a consultas
+- ✅ Contadores de mensagens não lidas
+- ✅ Marcação automática de mensagens como lidas
+- ✅ Chamadas de áudio (interface)
+- ✅ Videochamadas (interface)
+
+### Notificações
+- ✅ Sistema de notificações em tempo real
+- ✅ Notificações para eventos de consulta
+- ✅ Notificações para novas mensagens
+- ✅ Marcação de notificações como lidas
+- ✅ Contador de notificações não lidas
+- ✅ Diferentes tipos de notificação (APPOINTMENT, MESSAGE, REMINDER, SYSTEM)
 
 ### Perfil
 - ✅ Perfil do paciente
 - ✅ Perfil do profissional
 - ✅ Edição de dados
 - ✅ Configurações
+- ✅ Interface diferenciada por tipo de usuário
+
+### Performance e UX
+- ✅ Cache local de dados (AsyncStorage)
+- ✅ Animações suaves (fade in, slide, scale, bounce)
+- ✅ Loading states
+- ✅ Tratamento de erros gracioso
+- ✅ Pull-to-refresh
+- ✅ Offline mode (visualização de dados em cache)
 
 ## 📁 Estrutura do Projeto
 
 ```
 .
-├── Front-End/              # Aplicativo React Native
+├── Frontend/              # Aplicativo React Native
 │   ├── src/
 │   │   ├── components/     # Componentes reutilizáveis
 │   │   ├── screens/         # Telas do aplicativo
 │   │   ├── services/       # Serviços de API
-│   │   ├── config/          # Configurações
-│   │   ├── utils/           # Utilitários
-│   │   ├── types/           # Tipos TypeScript
-│   │   └── theme/           # Tema e cores
-│   ├── android/             # Configurações Android
-│   ├── ios/                 # Configurações iOS
+│   │   ├── hooks/          # Custom hooks
+│   │   ├── config/         # Configurações
+│   │   ├── utils/          # Utilitários (cache, etc)
+│   │   ├── types/          # Tipos TypeScript
+│   │   └── theme/          # Tema e cores
+│   ├── android/            # Configurações Android
+│   ├── ios/                # Configurações iOS
 │   └── package.json
 │
-├── Back-End/               # API NestJS
+├── Backend/               # API NestJS
 │   ├── src/
 │   │   ├── auth/           # Módulo de autenticação
 │   │   ├── users/          # Módulo de usuários
 │   │   ├── professionals/  # Módulo de profissionais
-│   │   ├── appointments/   # Módulo de agendamentos
+│   │   ├── appointments/    # Módulo de agendamentos
+│   │   ├── notifications/  # Módulo de notificações
+│   │   ├── messages/       # Módulo de mensagens
 │   │   ├── common/         # Recursos compartilhados
 │   │   ├── config/         # Configurações
 │   │   └── utils/          # Utilitários
 │   ├── prisma/             # Schema e migrations Prisma
+│   │   ├── schema.prisma   # Schema do banco
+│   │   ├── neon-schema.sql # SQL completo para Neon
+│   │   └── neon-inserts.sql # Dados iniciais
+│   ├── api/                # Entry point para Vercel
 │   └── package.json
 │
 └── README.md
 ```
-
-Para mais detalhes sobre a estrutura, consulte:
-- [Frontend Structure](./Frontend/STRUCTURE.md)
-- [Backend Structure](./Backend/STRUCTURE.md)
 
 ## 📦 Pré-requisitos
 
@@ -115,7 +147,7 @@ Antes de começar, você precisa ter instalado:
 
 - **Node.js** >= 20
 - **npm** ou **yarn**
-- **PostgreSQL** (para o backend)
+- **PostgreSQL** (para o backend) ou **Neon PostgreSQL** (cloud)
 - **React Native CLI** (para desenvolvimento mobile)
 - **Android Studio** (para Android) ou **Xcode** (para iOS)
 
@@ -131,21 +163,21 @@ cd <nome-do-repositorio>
 ### 2. Instale as dependências do Backend
 
 ```bash
-cd Back-End
+cd Backend
 npm install
 ```
 
 ### 3. Instale as dependências do Frontend
 
 ```bash
-cd Front-End
+cd Frontend
 npm install
 ```
 
 ### 4. Para iOS (apenas macOS)
 
 ```bash
-cd Front-End/ios
+cd Frontend/ios
 pod install
 cd ../..
 ```
@@ -154,7 +186,7 @@ cd ../..
 
 ### Backend
 
-1. Crie um arquivo `.env` na raiz do diretório `Back-End`:
+1. Crie um arquivo `.env` na raiz do diretório `Backend`:
 
 ```env
 # Database
@@ -165,16 +197,29 @@ JWT_SECRET="seu-secret-jwt-super-seguro-aqui"
 
 # Server
 PORT=3000
+NODE_ENV=development
 ```
 
-2. Execute as migrations do Prisma:
+2. **Opção 1: Usando Prisma Migrations**
 
 ```bash
-cd Back-End
+cd Backend
 npx prisma migrate dev
+npx prisma generate
 ```
 
-3. (Opcional) Popule o banco com dados de exemplo:
+3. **Opção 2: Usando SQL direto (Neon PostgreSQL)**
+
+Execute os arquivos SQL na ordem:
+```bash
+# 1. Schema completo
+psql "sua-connection-string" -f prisma/neon-schema.sql
+
+# 2. Dados iniciais (opcional)
+psql "sua-connection-string" -f prisma/neon-inserts.sql
+```
+
+4. (Opcional) Popule o banco com dados de exemplo:
 
 ```bash
 npx prisma db seed
@@ -182,7 +227,7 @@ npx prisma db seed
 
 ### Frontend
 
-1. Configure a URL da API em `Front-End/src/config/api.config.ts`:
+1. Configure a URL da API em `Frontend/src/config/api.config.ts`:
 
 ```typescript
 export const API_BASE_URL = __DEV__
@@ -197,7 +242,7 @@ export const API_BASE_URL = __DEV__
 ### Backend
 
 ```bash
-cd Back-End
+cd Backend
 
 # Desenvolvimento (com hot reload)
 npm run start:dev
@@ -205,6 +250,9 @@ npm run start:dev
 # Produção
 npm run build
 npm run start:prod
+
+# Deploy Vercel
+vercel deploy
 ```
 
 O backend estará rodando em `http://localhost:3000`
@@ -214,7 +262,7 @@ O backend estará rodando em `http://localhost:3000`
 #### Android
 
 ```bash
-cd Front-End
+cd Frontend
 
 # Inicie o Metro Bundler
 npm start
@@ -226,7 +274,7 @@ npm run android
 #### iOS
 
 ```bash
-cd Front-End
+cd Frontend
 
 # Inicie o Metro Bundler
 npm start
@@ -240,7 +288,7 @@ npm run ios
 ### Autenticação
 
 ```
-POST   /auth/login              # Login
+POST   /auth/login              # Login (valida tipo de usuário)
 POST   /auth/register           # Registro
 POST   /auth/forgot-password    # Recuperar senha
 POST   /auth/reset-password     # Redefinir senha
@@ -250,26 +298,38 @@ POST   /auth/verify-email       # Verificar email
 ### Profissionais
 
 ```
-GET    /professionals           # Listar profissionais (requer autenticação)
-GET    /professionals/:id      # Detalhes do profissional
+GET    /professionals           # Listar profissionais (com média de ratings)
 ```
+
+**Resposta inclui:**
+- `averageRating`: Média de avaliações (0-5)
+- `reviewsCount`: Quantidade de avaliações
 
 ### Agendamentos
 
 ```
-GET    /appointments/me        # Listar meus agendamentos
-GET    /appointments/:id       # Detalhes do agendamento
-POST   /appointments           # Criar agendamento
+GET    /appointments/me         # Listar meus agendamentos
+GET    /appointments/:id        # Detalhes do agendamento
+POST   /appointments            # Criar agendamento
 PATCH  /appointments/:id/cancel # Cancelar agendamento
+POST   /appointments/:id/rate   # Avaliar consulta (1-5 estrelas + comentário)
+```
+
+### Notificações
+
+```
+GET    /notifications/me         # Listar minhas notificações
+PATCH  /notifications/:id/read  # Marcar notificação como lida
+PATCH  /notifications/read-all  # Marcar todas como lidas
 ```
 
 ### Mensagens
 
 ```
-GET    /messages/conversations  # Listar conversas
-GET    /messages/:conversationId # Mensagens de uma conversa
-POST   /messages               # Enviar mensagem
-POST   /messages/conversations # Criar conversa
+GET    /messages/conversations                    # Listar conversas (com contador de não lidas)
+GET    /messages/conversations/:conversationId    # Mensagens de uma conversa
+POST   /messages/conversations/:conversationId    # Enviar mensagem
+GET    /messages/appointments/:appointmentId/conversation # Buscar/criar conversa por consulta
 ```
 
 **Nota**: Todos os endpoints (exceto login e registro) requerem autenticação via Bearer Token no header `Authorization`.
@@ -280,11 +340,14 @@ POST   /messages/conversations # Criar conversa
 
 - **User**: Usuário base (email, senha, role)
 - **Patient**: Perfil do paciente (CPF, telefone, data de nascimento)
-- **Professional**: Perfil do profissional (CRM, especialidades, preço)
+- **Professional**: Perfil do profissional (CRM, especialidades, preço, média de avaliações)
 - **Appointment**: Agendamento (data, status, preço)
+- **AppointmentRating**: Avaliação de consulta (rating 1-5, comentário)
 - **Specialty**: Especialidades médicas
 - **MedicalRecord**: Prontuário médico
-- **Message**: Mensagens entre usuários
+- **Conversation**: Conversas entre paciente e profissional
+- **Message**: Mensagens individuais
+- **Notification**: Notificações do sistema
 
 ### Status de Agendamento
 
@@ -294,14 +357,50 @@ POST   /messages/conversations # Criar conversa
 - `COMPLETED` - Finalizado
 - `CANCELED` - Cancelado
 
-Para mais detalhes, consulte o schema Prisma em `Back-End/prisma/schema.prisma`.
+### Tipos de Notificação
+
+- `APPOINTMENT` - Relacionada a consultas
+- `MESSAGE` - Relacionada a mensagens
+- `REMINDER` - Lembretes
+- `SYSTEM` - Notificações do sistema
+
+### Tipos de Usuário
+
+- `PATIENT` - Paciente (acessa tela inicial com busca de profissionais)
+- `PROFESSIONAL` - Profissional (acessa diretamente tela de consultas)
+- `ADMIN` - Administrador
+
+Para mais detalhes, consulte o schema Prisma em `Backend/prisma/schema.prisma`.
+
+## 🎨 Funcionalidades de Interface
+
+### Diferenciação por Tipo de Usuário
+
+- **Pacientes**: Veem tela inicial com busca de profissionais e serviços em destaque
+- **Profissionais**: Acessam diretamente a tela de consultas (sem tela inicial)
+- **Validação de Login**: Usuários só podem fazer login selecionando o tipo correto
+
+### Cache e Performance
+
+- Cache local de profissionais (TTL: 10 minutos)
+- Cache local de notificações (TTL: 1 minuto)
+- Cache local de agendamentos
+- Animações suaves em todas as telas
+- Pull-to-refresh em listas
+
+### Animações
+
+- Fade in em telas principais
+- Slide in para modais
+- Scale para botões
+- Bounce para feedback visual
 
 ## 📚 Documentação Adicional
 
-- [Arquitetura de Agendamento](./ARQUITETURA_AGENDAMENTO.md) - Documentação detalhada do sistema de agendamentos
-- [Análise de Problemas](./ANALISE_PROBLEMAS_SISTEMA.md) - Análise de problemas e soluções
-- [Correções Aplicadas](./CORRECOES_APLICADAS.md) - Histórico de correções
-- [Melhorias de Design](./MELHORIAS_DESIGN.md) - Documentação do design system
+- [Backend - Endpoints Implementados](./Backend/ENDPOINTS_IMPLEMENTADOS.md) - Documentação completa dos endpoints
+- [Backend - Setup Completo](./Backend/SETUP_COMPLETO.md) - Guia de setup e testes
+- [Backend - Schema SQL](./Backend/prisma/neon-schema.sql) - SQL completo do banco
+- [Backend - Dados Iniciais](./Backend/prisma/neon-inserts.sql) - Dados de exemplo
 
 ## 🤝 Contribuindo
 
@@ -316,9 +415,10 @@ Contribuições são bem-vindas! Para contribuir:
 ### Padrões de Código
 
 - Use TypeScript em todo o código
-- Siga os padrões de código definidos nos arquivos `STRUCTURE.md`
+- Siga os padrões de código definidos
 - Escreva testes para novas funcionalidades
 - Documente funções e componentes complexos
+- Use `react-native-safe-area-context` ao invés de `SafeAreaView` do React Native
 
 ## 📝 Licença
 

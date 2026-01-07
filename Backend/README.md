@@ -1,98 +1,337 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🏥 Backend - Sistema de Telemedicina Healtec
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST desenvolvida com NestJS para o sistema de telemedicina, fornecendo endpoints para autenticação, agendamentos, mensagens, notificações e avaliações.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 Índice
 
-## Description
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Tecnologias](#tecnologias)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Pré-requisitos](#pré-requisitos)
+- [Instalação](#instalação)
+- [Configuração](#configuração)
+- [Executando o Projeto](#executando-o-projeto)
+- [Endpoints da API](#endpoints-da-api)
+- [Banco de Dados](#banco-de-dados)
+- [Deploy](#deploy)
+- [Documentação Adicional](#documentação-adicional)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🎯 Sobre o Projeto
 
-## Project setup
+Backend completo desenvolvido com NestJS que fornece uma API REST para o aplicativo mobile de telemedicina. O sistema inclui:
 
-```bash
-$ npm install
+- Autenticação JWT com validação de tipo de usuário
+- Gerenciamento de agendamentos
+- Sistema completo de mensagens e chat
+- Sistema de notificações em tempo real
+- Avaliações de consultas
+- Cálculo automático de ratings de profissionais
+
+## 🛠 Tecnologias
+
+- **NestJS** 11.0.1 - Framework Node.js
+- **TypeScript** 5.7.3
+- **Prisma** 5.10.0 - ORM
+- **PostgreSQL** - Banco de dados
+- **JWT** - Autenticação
+- **Bcrypt** 6.0.0 - Hash de senhas
+- **Passport** 0.7.0 - Estratégias de autenticação
+- **Fastify** - Servidor HTTP (compatível com Vercel)
+- **Fastify CORS** - CORS para comunicação com mobile
+- **Fastify Helmet** - Segurança HTTP
+
+## 📁 Estrutura do Projeto
+
+```
+Backend/
+├── src/
+│   ├── auth/              # Autenticação (login, registro, JWT)
+│   ├── users/             # Gerenciamento de usuários
+│   ├── professionals/     # Profissionais (com cálculo de ratings)
+│   ├── appointments/      # Agendamentos e avaliações
+│   ├── notifications/     # Sistema de notificações
+│   ├── messages/          # Sistema de mensagens e chat
+│   ├── common/            # Recursos compartilhados
+│   │   ├── guards/        # Guards de autenticação
+│   │   ├── decorators/    # Decorators customizados
+│   │   ├── filters/       # Filtros de exceção
+│   │   ├── interceptors/  # Interceptors (Transform)
+│   │   └── strategies/    # Estratégias Passport
+│   ├── config/            # Configurações
+│   ├── prisma/            # Serviço Prisma
+│   └── utils/             # Utilitários
+├── prisma/
+│   ├── schema.prisma      # Schema do banco de dados
+│   ├── migrations/        # Migrations do Prisma
+│   ├── neon-schema.sql    # SQL completo para Neon
+│   └── neon-inserts.sql   # Dados iniciais
+├── api/
+│   └── index.ts           # Entry point para Vercel
+└── package.json
 ```
 
-## Compile and run the project
+## 📦 Pré-requisitos
+
+- **Node.js** >= 20
+- **npm** ou **yarn**
+- **PostgreSQL** (local) ou **Neon PostgreSQL** (cloud)
+- **Prisma CLI** (instalado via npm)
+
+## 🚀 Instalação
 
 ```bash
-# development
-$ npm run start
+# Instalar dependências
+npm install
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Gerar Prisma Client
+npx prisma generate
 ```
 
-## Run tests
+## ⚙️ Configuração
+
+### 1. Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do diretório `Backend`:
+
+```env
+# Database
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/telemedicina?schema=public"
+
+# JWT
+JWT_SECRET="seu-secret-jwt-super-seguro-aqui"
+
+# Server
+PORT=3000
+NODE_ENV=development
+```
+
+### 2. Banco de Dados
+
+#### Opção 1: Usando Prisma Migrations
 
 ```bash
-# unit tests
-$ npm run test
+# Criar e aplicar migrations
+npx prisma migrate dev
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Gerar Prisma Client
+npx prisma generate
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+#### Opção 2: Usando SQL direto (Neon PostgreSQL)
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# 1. Execute o schema completo
+psql "sua-connection-string" -f prisma/neon-schema.sql
+
+# 2. (Opcional) Execute os dados iniciais
+psql "sua-connection-string" -f prisma/neon-inserts.sql
+
+# 3. Gere o Prisma Client
+npx prisma generate
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 3. Dados Iniciais (Opcional)
 
-## Resources
+```bash
+# Popular banco com dados de exemplo
+npx prisma db seed
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## 🏃 Executando o Projeto
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Desenvolvimento
 
-## Support
+```bash
+# Modo watch (hot reload)
+npm run start:dev
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Modo normal
+npm run start
+```
 
-## Stay in touch
+### Produção
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+# Build
+npm run build
 
-## License
+# Executar
+npm run start:prod
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Prisma Studio (Interface Visual do Banco)
+
+```bash
+npx prisma studio
+```
+
+Acesse em: `http://localhost:5555`
+
+## 📡 Endpoints da API
+
+### Autenticação
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| POST | `/auth/login` | Login (valida tipo de usuário) | ❌ |
+| POST | `/auth/register` | Registro de novo usuário | ❌ |
+| POST | `/auth/forgot-password` | Solicitar recuperação de senha | ❌ |
+| POST | `/auth/reset-password` | Redefinir senha | ❌ |
+| POST | `/auth/verify-email` | Verificar email com código | ❌ |
+
+### Profissionais
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/professionals` | Listar profissionais (com ratings) | ✅ |
+
+**Resposta inclui:**
+- `averageRating`: Média de avaliações (0-5, arredondado para 1 decimal)
+- `reviewsCount`: Quantidade de avaliações
+
+### Agendamentos
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/appointments/me` | Listar meus agendamentos | ✅ |
+| GET | `/appointments/:id` | Detalhes do agendamento | ✅ |
+| POST | `/appointments` | Criar agendamento | ✅ |
+| PATCH | `/appointments/:id/cancel` | Cancelar agendamento | ✅ |
+| POST | `/appointments/:id/rate` | Avaliar consulta (1-5 + comentário) | ✅ |
+
+### Notificações
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/notifications/me` | Listar minhas notificações | ✅ |
+| PATCH | `/notifications/:id/read` | Marcar notificação como lida | ✅ |
+| PATCH | `/notifications/read-all` | Marcar todas como lidas | ✅ |
+
+### Mensagens
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| GET | `/messages/conversations` | Listar conversas (com contador) | ✅ |
+| GET | `/messages/conversations/:conversationId` | Mensagens de uma conversa | ✅ |
+| POST | `/messages/conversations/:conversationId` | Enviar mensagem | ✅ |
+| GET | `/messages/appointments/:appointmentId/conversation` | Buscar/criar conversa por consulta | ✅ |
+
+**Nota**: Todos os endpoints (exceto autenticação) requerem Bearer Token no header:
+```
+Authorization: Bearer <token>
+```
+
+## 🗄️ Banco de Dados
+
+### Schema Principal
+
+O banco de dados inclui as seguintes tabelas:
+
+- **User**: Usuários base (autenticação)
+- **Patient**: Perfis de pacientes
+- **Professional**: Perfis de profissionais
+- **Specialty**: Especialidades médicas
+- **ProfessionalSpecialty**: Relacionamento profissional-especialidade
+- **Appointment**: Agendamentos
+- **AppointmentRating**: Avaliações de consultas
+- **MedicalRecord**: Prontuários médicos
+- **AvailabilitySlot**: Horários disponíveis
+- **Conversation**: Conversas de chat
+- **Message**: Mensagens individuais
+- **Notification**: Notificações do sistema
+- **AuditLog**: Logs de auditoria
+
+### Enums
+
+- **Role**: `PATIENT`, `PROFESSIONAL`, `ADMIN`
+- **AppointmentStatus**: `PENDING_PAYMENT`, `SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `CANCELED`
+- **NotificationType**: `APPOINTMENT`, `MESSAGE`, `REMINDER`, `SYSTEM`
+
+### Relacionamentos
+
+- User ↔ Patient (1:1)
+- User ↔ Professional (1:1)
+- Patient ↔ Appointment (1:N)
+- Professional ↔ Appointment (1:N)
+- Appointment ↔ AppointmentRating (1:1)
+- Appointment ↔ Conversation (1:1)
+- Conversation ↔ Message (1:N)
+- User ↔ Notification (1:N)
+- Message ↔ Notification (1:N)
+
+### Índices Otimizados
+
+- `Notification`: `(userId, read)`, `(userId, createdAt)`
+- `AppointmentRating`: `(appointmentId)`
+- `Conversation`: `(patientId, professionalId)`, `(appointmentId)`
+- `Message`: `(conversationId, createdAt)`, `(senderId)`
+
+## 🚀 Deploy
+
+### Vercel
+
+O projeto está configurado para deploy no Vercel:
+
+```bash
+# Instalar Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel deploy
+```
+
+O arquivo `api/index.ts` converte requisições do Vercel para o formato Fastify.
+
+### Variáveis de Ambiente no Vercel
+
+Configure no painel do Vercel:
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `NODE_ENV=production`
+
+## 📚 Documentação Adicional
+
+- [Endpoints Implementados](./ENDPOINTS_IMPLEMENTADOS.md) - Documentação completa dos endpoints
+- [Setup Completo](./SETUP_COMPLETO.md) - Guia de setup e testes
+- [Schema SQL](./prisma/neon-schema.sql) - SQL completo do banco
+- [Dados Iniciais](./prisma/neon-inserts.sql) - Dados de exemplo
+- [Migration Messages](./MIGRATION_MESSAGES.md) - Documentação do sistema de mensagens
+
+## 🧪 Testes
+
+```bash
+# Testes unitários
+npm run test
+
+# Testes e2e
+npm run test:e2e
+
+# Cobertura de testes
+npm run test:cov
+```
+
+## 🔧 Comandos Úteis
+
+```bash
+# Prisma
+npx prisma migrate dev          # Criar e aplicar migration
+npx prisma migrate deploy       # Aplicar migrations em produção
+npx prisma generate             # Gerar Prisma Client
+npx prisma studio               # Abrir interface visual
+npx prisma db seed              # Popular banco com dados
+
+# Build
+npm run build                   # Compilar TypeScript
+
+# Desenvolvimento
+npm run start:dev               # Modo watch
+npm run start:debug             # Modo debug
+```
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT.
+
+---
+
+**Desenvolvido com ❤️ para facilitar o acesso à saúde**
