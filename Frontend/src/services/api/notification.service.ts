@@ -6,6 +6,7 @@
 import { api } from '../../config/axios.config';
 import { API_ENDPOINTS } from '../../config/api.config';
 import { getCache, setCache, removeCache, CACHE_KEYS } from '../../utils/cache';
+import { isTokenValid } from '../../utils/token.util';
 
 export interface Notification {
   id: string;
@@ -24,6 +25,19 @@ export const notificationService = {
    * Usa cache para melhorar performance (TTL de 1 minuto)
    */
   async getMyNotifications(token: string, useCache: boolean = true): Promise<Notification[]> {
+    // Validar token antes de fazer requisição
+    if (!token || !isTokenValid(token)) {
+      // Se token inválido, tentar retornar do cache
+      if (useCache) {
+        const cached = await getCache<Notification[]>(CACHE_KEYS.NOTIFICATIONS);
+        if (cached) {
+          return cached;
+        }
+      }
+      // Retornar array vazio se token inválido (não é erro crítico)
+      return [];
+    }
+
     // Tentar buscar do cache primeiro
     if (useCache) {
       const cached = await getCache<Notification[]>(CACHE_KEYS.NOTIFICATIONS);
@@ -52,8 +66,15 @@ export const notificationService = {
 
       return notificationsArray;
     } catch (error: any) {
+      // Se for erro 401, tentar retornar do cache antes de retornar vazio
+      if (error.response?.status === 401 && useCache) {
+        const cached = await getCache<Notification[]>(CACHE_KEYS.NOTIFICATIONS);
+        if (cached) {
+          return cached;
+        }
+      }
       // Se o endpoint não existir ainda (404), retornar array vazio silenciosamente
-      if (error.response?.status === 404) {
+      if (error.response?.status === 404 || error.response?.status === 401) {
         return [];
       }
       throw error;

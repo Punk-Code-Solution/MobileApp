@@ -7,6 +7,7 @@ import { api } from '../../config/axios.config';
 import { API_ENDPOINTS } from '../../config/api.config';
 import { Appointment, CreateAppointmentDto } from '../../types/appointment.types';
 import { getCache, setCache, removeCache, CACHE_KEYS } from '../../utils/cache';
+import { isTokenValid } from '../../utils/token.util';
 
 export const appointmentService = {
   /**
@@ -49,17 +50,37 @@ export const appointmentService = {
         throw new Error('Dados de agendamento inválidos');
       }
 
+      // Validar formato UUID do professionalId
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(data.professionalId.trim())) {
+        throw new Error('ID do profissional inválido. Formato UUID esperado.');
+      }
+
+      // Validar formato ISO 8601 da data
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(data.scheduledAt)) {
+        throw new Error('Formato de data inválido. Use formato ISO 8601 (ex: 2024-01-15T14:30:00Z)');
+      }
+
       // Validar token
       if (!token || typeof token !== 'string') {
         throw new Error('Token de autenticação inválido');
       }
 
+      // Validar se token não está expirado
+      if (!isTokenValid(token)) {
+        throw new Error('Token expirado. Por favor, faça login novamente.');
+      }
+
       const response = await api.post<{ data: Appointment; statusCode: number }>(
         API_ENDPOINTS.APPOINTMENTS.BASE, 
-        data, 
+        {
+          professionalId: data.professionalId.trim(),
+          scheduledAt: data.scheduledAt,
+        }, 
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
           timeout: 30000, // 30 segundos de timeout
         }

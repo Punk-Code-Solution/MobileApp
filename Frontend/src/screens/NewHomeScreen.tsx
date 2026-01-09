@@ -43,6 +43,7 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
 
   const fetchDoctors = async () => {
     try {
+      // Validação de token já é feita no service, mas podemos adicionar tratamento de erro específico
       const doctorsData = await professionalService.getAll(token);
       
       // Garantir que sempre seja um array
@@ -50,8 +51,12 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
       
       console.log('Doctors recebidos:', doctorsArray.length);
       setDoctors(doctorsArray);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar profissionais:', error);
+      // Se for erro 401, não é necessário logar como erro crítico
+      if (error.response?.status === 401) {
+        console.log('Token expirado ao buscar profissionais');
+      }
       setDoctors([]); // Garantir que seja um array vazio em caso de erro
     } finally {
       setLoading(false);

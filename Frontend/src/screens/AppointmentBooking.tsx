@@ -157,7 +157,15 @@ export default function AppointmentBooking({
     setLoading(true);
 
     try {
+      // Validar professionalId é um UUID válido
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const trimmedProfessionalId = professional.id.trim();
+      if (!uuidRegex.test(trimmedProfessionalId)) {
+        throw new Error('ID do profissional inválido. Formato UUID esperado.');
+      }
+
       // Garantir que a data está em formato ISO 8601 válido
+      // Usar UTC para evitar problemas de timezone
       const scheduledAtISO = appointmentDateTime.toISOString();
       
       // Validar formato antes de enviar
@@ -165,8 +173,13 @@ export default function AppointmentBooking({
         throw new Error('Data/hora inválida');
       }
 
+      // Validar que a string ISO está no formato correto (deve terminar com Z ou ter timezone)
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(scheduledAtISO)) {
+        throw new Error('Formato de data inválido. Use formato ISO 8601.');
+      }
+
       const appointmentData: CreateAppointmentDto = {
-        professionalId: professional.id.trim(),
+        professionalId: trimmedProfessionalId,
         scheduledAt: scheduledAtISO,
       };
 

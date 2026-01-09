@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { notificationService, Notification } from '../services/api/notification.service';
 import { messageService } from '../services/api/message.service';
 import { Conversation } from '../types/message.types';
+import { isTokenValid } from '../utils/token.util';
 
 interface UnreadCounts {
   notifications: number;
@@ -20,6 +21,13 @@ export function useUnreadCounts(token: string) {
   const [loading, setLoading] = useState(true);
 
   const fetchUnreadCounts = useCallback(async () => {
+    // Validar token antes de fazer requisições
+    if (!token || !isTokenValid(token)) {
+      setUnreadCounts({ notifications: 0, messages: 0 });
+      setLoading(false);
+      return;
+    }
+
     try {
       // Buscar notificações não lidas
       const notifications = await notificationService.getMyNotifications(token, true);
