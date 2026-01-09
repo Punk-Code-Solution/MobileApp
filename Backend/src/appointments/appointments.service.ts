@@ -14,35 +14,59 @@ export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createAppointmentDto: CreateAppointmentDto, userId: string, userRole: string) {
+    console.log('[APPOINTMENTS-SERVICE] ===== INÍCIO create =====');
+    console.log('[APPOINTMENTS-SERVICE] DTO recebido:', JSON.stringify(createAppointmentDto, null, 2));
+    console.log('[APPOINTMENTS-SERVICE] User ID:', userId);
+    console.log('[APPOINTMENTS-SERVICE] User Role:', userRole);
+    
     const { professionalId, scheduledAt } = createAppointmentDto;
+    console.log('[APPOINTMENTS-SERVICE] professionalId:', professionalId);
+    console.log('[APPOINTMENTS-SERVICE] scheduledAt (string):', scheduledAt);
+    console.log('[APPOINTMENTS-SERVICE] scheduledAt type:', typeof scheduledAt);
 
     // 0. Validar role primeiro (antes de fazer queries)
     if (userRole !== 'PATIENT') {
+      console.log('[APPOINTMENTS-SERVICE] ❌ Role inválido:', userRole);
       throw new ForbiddenException('Apenas pacientes podem criar agendamentos.');
     }
+    console.log('[APPOINTMENTS-SERVICE] ✅ Role válido (PATIENT)');
 
     // 1. Converter scheduledAt para Date (normalizar para UTC)
     const appointmentDate = new Date(scheduledAt);
+    console.log('[APPOINTMENTS-SERVICE] appointmentDate criado:', appointmentDate.toISOString());
+    console.log('[APPOINTMENTS-SERVICE] appointmentDate.getTime():', appointmentDate.getTime());
     // Garantir que estamos trabalhando com UTC
     if (isNaN(appointmentDate.getTime())) {
+      console.log('[APPOINTMENTS-SERVICE] ❌ Data/hora inválida após conversão');
       throw new BadRequestException('Data/hora inválida. Use formato ISO 8601 (ex: 2024-01-15T14:30:00Z)');
     }
+    console.log('[APPOINTMENTS-SERVICE] ✅ Data/hora válida após conversão');
     const now = new Date();
+    console.log('[APPOINTMENTS-SERVICE] Data/hora atual (now):', now.toISOString());
 
     // 2. Validação: Não permitir agendamentos no passado
+    console.log('[APPOINTMENTS-SERVICE] Validando se data não está no passado...');
+    console.log('[APPOINTMENTS-SERVICE] appointmentDate <= now?', appointmentDate <= now);
     if (appointmentDate <= now) {
+      console.log('[APPOINTMENTS-SERVICE] ❌ Data no passado');
       throw new BadRequestException(
         'Não é possível agendar consultas no passado. Por favor, selecione uma data futura.',
       );
     }
+    console.log('[APPOINTMENTS-SERVICE] ✅ Data não está no passado');
 
     // 3. Validação: Mínimo de 2 horas de antecedência
     const minTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 horas
+    console.log('[APPOINTMENTS-SERVICE] Data/hora mínima permitida (minTime):', minTime.toISOString());
+    console.log('[APPOINTMENTS-SERVICE] Diferença em horas:', (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+    console.log('[APPOINTMENTS-SERVICE] appointmentDate < minTime?', appointmentDate < minTime);
     if (appointmentDate < minTime) {
+      console.log('[APPOINTMENTS-SERVICE] ❌ Data muito próxima (menos de 2h de antecedência)');
       throw new BadRequestException(
         'É necessário agendar com pelo menos 2 horas de antecedência.',
       );
     }
+    console.log('[APPOINTMENTS-SERVICE] ✅ Data com antecedência suficiente (>= 2h)');
 
     // 2. Buscar o Patient pelo userId (já validamos role acima)
     const patient = await this.prisma.patient.findUnique({
