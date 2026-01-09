@@ -2,7 +2,7 @@
 import { IsString, IsNotEmpty, IsDateString, IsUUID } from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsUUID()
+  @IsUUID('all', { message: 'professionalId must be a valid UUID' })
   @IsNotEmpty()
   professionalId: string;
 

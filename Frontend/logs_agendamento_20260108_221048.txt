@@ -1,0 +1,121 @@
+01-08 22:10:54.478 I/ReactNativeJS(18028): [APPOINTMENT] ===== IN+ìCIO DO PROCESSO DE AGENDAMENTO =====
+01-08 22:10:54.478 I/ReactNativeJS(18028): '[APPOINTMENT] Timestamp:', '2026-01-09T01:10:54.478Z'
+01-08 22:10:54.478 I/ReactNativeJS(18028): '[APPOINTMENT] Professional ID:', '00000000-0000-0000-0000-000000000100'
+01-08 22:10:54.478 I/ReactNativeJS(18028): '[APPOINTMENT] Professional Name:', 'Dr. Jo+úo Silva'
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] Selected Date:', '2026-01-11T03:00:00.000Z'
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] Selected Time:', '10:00'
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] Loading state:', false
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] Component mounted:', true
+01-08 22:10:54.479 I/ReactNativeJS(18028): [APPOINTMENT] ­ƒôà Validando data e hor+írio...
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] selectedDate (Date object):', Sun Jan 11 2026 00:00:00 GMT-0300
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] selectedDate.toISOString():', '2026-01-11T03:00:00.000Z'
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] selectedDate.getTime():', 1768100400000
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] selectedDate.getFullYear():', 2026
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] selectedDate.getMonth():', 0
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] selectedDate.getDate():', 11
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] selectedTime:', '10:00'
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] Horas extra+¡das:', 10, 'Minutos:', 0
+01-08 22:10:54.479 I/ReactNativeJS(18028): '[APPOINTMENT] appointmentDateTime criado (UTC):', Sun Jan 11 2026 07:00:00 GMT-0300
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] appointmentDateTime.toISOString():', '2026-01-11T10:00:00.000Z'
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] appointmentDateTime.getTime():', 1768125600000
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] appointmentDateTime UTC components:', { year: 2026, month: 0, date: 11, hours: 10, minutes: 0 }
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] Data/hora atual (now):', '2026-01-09T01:10:54.480Z'
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] Data/hora m+¡nima permitida:', '2026-01-09T03:10:54.480Z'
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] Diferen+ºa em horas:', 56.8182
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] appointmentDateTime < minTime?', false
+01-08 22:10:54.480 I/ReactNativeJS(18028): [APPOINTMENT] ­ƒöì Validando professionalId...
+01-08 22:10:54.480 I/ReactNativeJS(18028): '[APPOINTMENT] Ô£à ProfessionalId v+ílido:', '00000000-0000-0000-0000-000000000100'
+01-08 22:10:54.480 I/ReactNativeJS(18028): [APPOINTMENT] ­ƒöÉ Validando token...
+01-08 22:10:54.480 I/ReactNativeJS(18028): [APPOINTMENT] Ô£à Todas as valida+º+Áes passaram, iniciando requisi+º+úo...
+01-08 22:10:54.480 I/ReactNativeJS(18028): [APPOINTMENT] ­ƒöä Preparando dados para envio...
+01-08 22:10:54.481 I/ReactNativeJS(18028): '[APPOINTMENT] Validando formato UUID do professionalId:', '00000000-0000-0000-0000-000000000100'
+01-08 22:10:54.481 I/ReactNativeJS(18028): [APPOINTMENT] Ô£à Formato UUID v+ílido
+01-08 22:10:54.481 I/ReactNativeJS(18028): '[APPOINTMENT] Data formatada para ISO 8601:', '2026-01-11T10:00:00.000Z'
+01-08 22:10:54.481 I/ReactNativeJS(18028): [APPOINTMENT] Ô£à Formato ISO 8601 v+ílido
+01-08 22:10:54.481 I/ReactNativeJS(18028): [APPOINTMENT] ­ƒôñ Dados preparados para envio:
+01-08 22:10:54.481 I/ReactNativeJS(18028): '[APPOINTMENT]   - professionalId:', '00000000-0000-0000-0000-000000000100'
+01-08 22:10:54.481 I/ReactNativeJS(18028): '[APPOINTMENT]   - scheduledAt:', '2026-01-11T10:00:00.000Z'
+01-08 22:10:54.481 I/ReactNativeJS(18028): [APPOINTMENT] ­ƒÜÇ Chamando appointmentService.createAppointment...
+01-08 22:10:54.481 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ===== IN+ìCIO createAppointment =====
+01-08 22:10:54.481 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Timestamp:', '2026-01-09T01:10:54.481Z'
+01-08 22:10:54.481 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Token presente:', true
+01-08 22:10:54.481 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Token length:', 251
+01-08 22:10:54.482 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Data recebida:', { professionalId: '00000000-0000-0000-0000-000000000100',
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ­ƒöì Validando dados de entrada...
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] Ô£à Dados b+ísicos v+ílidos
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ­ƒöì Validando formato UUID...
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] Ô£à Formato UUID v+ílido
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ­ƒöì Validando formato ISO 8601...
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] Ô£à Formato ISO 8601 v+ílido
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ­ƒöì Validando token...
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ­ƒöì Verificando expira+º+úo do token...
+01-08 22:10:54.482 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] Ô£à Token v+ílido e n+úo expirado
+01-08 22:10:54.482 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] ­ƒôñ Enviando requisi+º+úo POST para:', '/appointments'
+01-08 22:10:54.482 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Payload:', '{\n  "professionalId": "00000000-0000-0000-0000-000000000100",\n  "scheduledAt": "2026-01-11T10:00:00.000Z"\n}'
+01-08 22:10:54.482 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Headers:', { Authorization: 'Bearer eyJhbGciOiJIUzI1NiIs...',
+01-08 22:10:55.113 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ÔØî ===== ERRO em createAppointment =====
+01-08 22:10:55.114 E/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Erro capturado:', [AxiosError: Request failed with status code 400]
+01-08 22:10:55.119 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Tipo do erro:', 'object'
+01-08 22:10:55.120 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Mensagem:', 'Request failed with status code 400'
+01-08 22:10:55.120 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Status code:', 400
+01-08 22:10:55.120 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] ERROR_DATA_STRING:', '{"statusCode":400,"timestamp":"2026-01-09T01:10:54.517Z","path":"/appointments","message":["professionalId must be a UUID"]}'
+01-08 22:10:55.120 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ===== RESPONSE DATA COMPLETO =====
+01-08 22:10:55.121 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Tipo do errorData:', 'object'
+01-08 22:10:55.121 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Numero de keys:', 4
+01-08 22:10:55.121 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Keys do errorData:', 'statusCode, timestamp, path, message'
+01-08 22:10:55.121 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] STATUS_CODE:', 400
+01-08 22:10:55.122 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] MESSAGE_TYPE:', 'object'
+01-08 22:10:55.122 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] MESSAGE_ARRAY_LENGTH:', 1
+01-08 22:10:55.122 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] MESSAGE[0]:', 'professionalId must be a UUID'
+01-08 22:10:55.123 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] TIMESTAMP:', '2026-01-09T01:10:54.517Z'
+01-08 22:10:55.123 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] PATH:', '/appointments'
+01-08 22:10:55.123 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ===== JSON COMPLETO =====
+01-08 22:10:55.123 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '{'
+01-08 22:10:55.123 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '  "statusCode": 400,'
+01-08 22:10:55.124 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '  "timestamp": "2026-01-09T01:10:54.517Z",'
+01-08 22:10:55.124 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '  "path": "/appointments",'
+01-08 22:10:55.124 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '  "message": ['
+01-08 22:10:55.124 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '    "professionalId must be a UUID"'
+01-08 22:10:55.125 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '  ]'
+01-08 22:10:55.125 E/unknown:ReactNative(18028): console.error: [APPOINTMENT-SERVICE] Erro capturado: AxiosError: Request failed with status code 400, stack:
+01-08 22:10:55.125 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE]', '}'
+01-08 22:10:55.125 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ===== FIM JSON COMPLETO =====
+01-08 22:10:55.125 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ===== FIM RESPONSE DATA =====
+01-08 22:10:55.125 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ===== MENSAGEM DE ERRO EXTRA+ìDA =====
+01-08 22:10:55.125 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Mensagem:', 'professionalId must be a UUID'
+01-08 22:10:55.126 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Tipo da mensagem:', 'string'
+01-08 22:10:55.126 I/ReactNativeJS(18028): [APPOINTMENT-SERVICE] ===== ERROS DE VALIDA+ç+âO DETALHADOS =====
+01-08 22:10:55.126 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Erro 1:', '"professionalId must be a UUID"'
+01-08 22:10:55.127 I/ReactNativeJS(18028): '[APPOINTMENT-SERVICE] Response headers:', '{\n  "access-control-allow-credentials": "true",\n  "cache-control": "public, max-age=0, must-revalidate",\n  "content-length": "124",\n  "content-type": "application/json; charset=utf-8",\n  "cross-origin-opener-policy": "same-origin",\n  "cross-origin-resource-policy": "same-origin",\n  "date": "Fri, 09 Jan 2026 01:10:54 GMT",\n  "origin-agent-cluster": "?1",\n  "referrer-policy": "no-referrer",\n  "server": "Vercel",\n  "strict-transport-security": "max-age=15552000; includeSubDomains",\n  "vary": "Origin",\n  "x-content-type-options": "nosniff",\n  "x-dns-prefetch-control": "off",\n  "x-download-options": "noopen",\n  "x-frame-options": "SAMEORIGIN",\n  "x-permitted-cross-domain-policies": "none",\n  "x-vercel-cache": "MISS",\n  "x-vercel-id": "gru1::iad1::l4gg8-1767921054418-1d34301e5f44",\n  "x-xss-protection": "0"\n}'
+01-08 22:10:55.128 I/ReactNativeJS(18028): [APPOINTMENT] ÔØî Erro na requisi+º+úo ao servi+ºo
+01-08 22:10:55.128 I/ReactNativeJS(18028): '[APPOINTMENT] Tipo do erro:', 'object'
+01-08 22:10:55.128 I/ReactNativeJS(18028): '[APPOINTMENT] Mensagem do erro:', 'Request failed with status code 400'
+01-08 22:10:55.128 I/ReactNativeJS(18028): '[APPOINTMENT] Status code:', 400
+01-08 22:10:55.129 I/ReactNativeJS(18028): [APPOINTMENT] ÔØî ===== ERRO NO PROCESSO DE AGENDAMENTO =====
+01-08 22:10:55.129 I/ReactNativeJS(18028): '[APPOINTMENT] Timestamp do erro:', '2026-01-09T01:10:55.129Z'
+01-08 22:10:55.129 E/ReactNativeJS(18028): '[APPOINTMENT] Erro capturado:', [AxiosError: Request failed with status code 400]
+01-08 22:10:55.132 I/ReactNativeJS(18028): '[APPOINTMENT] Tipo do erro:', 'object'
+01-08 22:10:55.132 I/ReactNativeJS(18028): '[APPOINTMENT] Nome do erro:', 'AxiosError'
+01-08 22:10:55.133 I/ReactNativeJS(18028): '[APPOINTMENT] Mensagem do erro:', 'Request failed with status code 400'
+01-08 22:10:55.133 I/ReactNativeJS(18028): '[APPOINTMENT] Stack trace:', 'AxiosError: Request failed with status code 400\n    at settle (address at index.android.bundle:1:778451)\n    at onloadend (address at index.android.bundle:1:792910)\n    at invoke (address at index.android.bundle:1:280556)\n    at dispatch (address at index.android.bundle:1:279909)\n    at value (address at index.android.bundle:1:282114)\n    at dispatchTrustedEvent (address at index.android.bundle:1:282298)\n    at setReadyState (address at index.android.bundle:1:275692)\n    at __didCompleteResponse (address at index.android.bundle:1:273037)\n    at apply (native)\n    at anonymous (address at index.android.bundle:1:275012)\n    at apply (native)\n    at emit (address at index.android.bundle:1:37854)\n    at apply (native)\n    at anonymous (address at index.android.bundle:1:35186)\n    at emit (address at index.android.bundle:1:35520)\n    at ?anon_0_ (address at index.android.bundle:1:801246)\n    at throw (native)\n    at asyncGeneratorStep (address at index.android.bundle:1:593287)\n    at _throw (address at index.android.bundle:1:593591)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)'
+01-08 22:10:55.134 E/unknown:ReactNative(18028): console.error: [APPOINTMENT] Erro capturado: AxiosError: Request failed with status code 400, stack:
+01-08 22:10:55.135 I/ReactNativeJS(18028): '[APPOINTMENT] Erro completo (JSON):', '{\n  "stack": "AxiosError: Request failed with status code 400\\n    at settle (address at index.android.bundle:1:778451)\\n    at onloadend (address at index.android.bundle:1:792910)\\n    at invoke (address at index.android.bundle:1:280556)\\n    at dispatch (address at index.android.bundle:1:279909)\\n    at value (address at index.android.bundle:1:282114)\\n    at dispatchTrustedEvent (address at index.android.bundle:1:282298)\\n    at setReadyState (address at index.android.bundle:1:275692)\\n    at __didCompleteResponse (address at index.android.bundle:1:273037)\\n    at apply (native)\\n    at anonymous (address at index.android.bundle:1:275012)\\n    at apply (native)\\n    at emit (address at index.android.bundle:1:37854)\\n    at apply (native)\\n    at anonymous (address at index.android.bundle:1:35186)\\n    at emit (address at index.android.bundle:1:35520)\\n    at ?anon_0_ (address at index.android.bundle:1:801246)\\n    at throw (native)\\n    at asyncGeneratorStep (address at index.android.bundle:1:593287)\\n    at _throw (address at index.android.bundle:1:593591)\\n    at tryCallOne (address at InternalBytecode.js:1:1180)\\n    at anonymous (address at InternalBytecode.js:1:1874)",\n  "message": "Request failed with status code 400",\n  "name": "AxiosError",\n  "code": "ERR_BAD_REQUEST",\n  "config": {},\n  "status": 400\n}'
+01-08 22:10:55.135 I/ReactNativeJS(18028): '[APPOINTMENT] Status code:', 400
+01-08 22:10:55.135 I/ReactNativeJS(18028): '[APPOINTMENT] Status text:', undefined
+01-08 22:10:55.135 I/ReactNativeJS(18028): [APPOINTMENT] ===== RESPONSE DATA COMPLETO =====
+01-08 22:10:55.136 I/ReactNativeJS(18028): '[APPOINTMENT]', '{\n  "statusCode": 400,\n  "timestamp": "2026-01-09T01:10:54.517Z",\n  "path": "/appointments",\n  "message": [\n    "professionalId must be a UUID"\n  ]\n}'
+01-08 22:10:55.136 I/ReactNativeJS(18028): '[APPOINTMENT]', '{'
+01-08 22:10:55.136 I/ReactNativeJS(18028): '[APPOINTMENT]', '  "statusCode": 400,'
+01-08 22:10:55.137 I/ReactNativeJS(18028): '[APPOINTMENT]', '  "timestamp": "2026-01-09T01:10:54.517Z",'
+01-08 22:10:55.137 I/ReactNativeJS(18028): '[APPOINTMENT]', '  "path": "/appointments",'
+01-08 22:10:55.137 I/ReactNativeJS(18028): '[APPOINTMENT]', '  "message": ['
+01-08 22:10:55.137 I/ReactNativeJS(18028): '[APPOINTMENT]', '    "professionalId must be a UUID"'
+01-08 22:10:55.138 I/ReactNativeJS(18028): '[APPOINTMENT]', '  ]'
+01-08 22:10:55.138 I/ReactNativeJS(18028): '[APPOINTMENT]', '}'
+01-08 22:10:55.138 I/ReactNativeJS(18028): [APPOINTMENT] ===== FIM RESPONSE DATA =====
+01-08 22:10:55.138 I/ReactNativeJS(18028): [APPOINTMENT] ===== MENSAGEM DE ERRO EXTRA+ìDA =====
+01-08 22:10:55.138 I/ReactNativeJS(18028): '[APPOINTMENT] Mensagem:', 'professionalId must be a UUID'
+01-08 22:10:55.139 I/ReactNativeJS(18028): '[APPOINTMENT] Tipo da mensagem:', 'string'
+01-08 22:10:55.139 I/ReactNativeJS(18028): [APPOINTMENT] ===== ERROS DE VALIDA+ç+âO DETALHADOS =====
+01-08 22:10:55.139 I/ReactNativeJS(18028): '[APPOINTMENT] Erro 1:', '"professionalId must be a UUID"'
+01-08 22:10:55.140 I/ReactNativeJS(18028): '[APPOINTMENT] Response headers:', '{\n  "access-control-allow-credentials": "true",\n  "cache-control": "public, max-age=0, must-revalidate",\n  "content-length": "124",\n  "content-type": "application/json; charset=utf-8",\n  "cross-origin-opener-policy": "same-origin",\n  "cross-origin-resource-policy": "same-origin",\n  "date": "Fri, 09 Jan 2026 01:10:54 GMT",\n  "origin-agent-cluster": "?1",\n  "referrer-policy": "no-referrer",\n  "server": "Vercel",\n  "strict-transport-security": "max-age=15552000; includeSubDomains",\n  "vary": "Origin",\n  "x-content-type-options": "nosniff",\n  "x-dns-prefetch-control": "off",\n  "x-download-options": "noopen",\n  "x-frame-options": "SAMEORIGIN",\n  "x-permitted-cross-domain-policies": "none",\n  "x-vercel-cache": "MISS",\n  "x-vercel-id": "gru1::iad1::l4gg8-1767921054418-1d34301e5f44",\n  "x-xss-protection": "0"\n}'
