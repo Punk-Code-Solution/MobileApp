@@ -111,43 +111,18 @@ export default function AppointmentBooking({
   const priceFormatted = professional.price ? Number(professional.price).toFixed(2) : '0.00';
 
   const handleConfirm = async () => {
-    console.log('[APPOINTMENT] ===== INÍCIO DO PROCESSO DE AGENDAMENTO =====');
-    console.log('[APPOINTMENT] Timestamp:', new Date().toISOString());
-    console.log('[APPOINTMENT] Professional ID:', professional?.id);
-    console.log('[APPOINTMENT] Professional Name:', professional?.fullName);
-    console.log('[APPOINTMENT] Selected Date:', selectedDate?.toISOString());
-    console.log('[APPOINTMENT] Selected Time:', selectedTime);
-    console.log('[APPOINTMENT] Loading state:', loading);
-    console.log('[APPOINTMENT] Component mounted:', isMountedRef.current);
-
     // Proteção contra múltiplos cliques
     if (loading) {
-      console.log('[APPOINTMENT] ⚠️ Processo já em andamento, ignorando clique');
       return;
     }
 
     if (!selectedDate || !selectedTime) {
-      console.log('[APPOINTMENT] ❌ Validação falhou: data ou horário não selecionados');
       showToast('Por favor, selecione uma data e um horário', 'warning');
       return;
     }
 
-    // Validação: Não permitir agendamentos no passado
-    console.log('[APPOINTMENT] 📅 Validando data e horário...');
-    console.log('[APPOINTMENT] selectedDate (Date object):', selectedDate);
-    console.log('[APPOINTMENT] selectedDate.toISOString():', selectedDate.toISOString());
-    console.log('[APPOINTMENT] selectedDate.getTime():', selectedDate.getTime());
-    console.log('[APPOINTMENT] selectedDate.getFullYear():', selectedDate.getFullYear());
-    console.log('[APPOINTMENT] selectedDate.getMonth():', selectedDate.getMonth());
-    console.log('[APPOINTMENT] selectedDate.getDate():', selectedDate.getDate());
-    console.log('[APPOINTMENT] selectedTime:', selectedTime);
-    
     // Criar nova data baseada na data selecionada, mas com o horário escolhido
-    // IMPORTANTE: Usar getFullYear, getMonth, getDate para evitar problemas de timezone
-    // Isso cria a data no timezone local, depois convertemos para UTC
     const [hours, minutes] = selectedTime.split(':').map(Number);
-    console.log('[APPOINTMENT] Horas extraídas:', hours, 'Minutos:', minutes);
-    
     const appointmentDateTime = new Date(
       Date.UTC(
         selectedDate.getFullYear(),
@@ -160,43 +135,22 @@ export default function AppointmentBooking({
       )
     );
     
-    console.log('[APPOINTMENT] appointmentDateTime criado (UTC):', appointmentDateTime);
-    console.log('[APPOINTMENT] appointmentDateTime.toISOString():', appointmentDateTime.toISOString());
-    console.log('[APPOINTMENT] appointmentDateTime.getTime():', appointmentDateTime.getTime());
-    console.log('[APPOINTMENT] appointmentDateTime UTC components:', {
-      year: appointmentDateTime.getUTCFullYear(),
-      month: appointmentDateTime.getUTCMonth(),
-      date: appointmentDateTime.getUTCDate(),
-      hours: appointmentDateTime.getUTCHours(),
-      minutes: appointmentDateTime.getUTCMinutes(),
-    });
-    
     const now = new Date();
     const minTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // Mínimo 2 horas no futuro
-    console.log('[APPOINTMENT] Data/hora atual (now):', now.toISOString());
-    console.log('[APPOINTMENT] Data/hora mínima permitida:', minTime.toISOString());
-    console.log('[APPOINTMENT] Diferença em horas:', (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60));
-    console.log('[APPOINTMENT] appointmentDateTime < minTime?', appointmentDateTime < minTime);
     
     if (appointmentDateTime < minTime) {
-      console.log('[APPOINTMENT] ❌ Validação falhou: horário muito próximo (mínimo 2h de antecedência)');
       showToast('Por favor, selecione um horário com pelo menos 2 horas de antecedência', 'warning');
       return;
     }
 
     // Validar professionalId
-    console.log('[APPOINTMENT] 🔍 Validando professionalId...');
     if (!professional.id || typeof professional.id !== 'string') {
-      console.log('[APPOINTMENT] ❌ Validação falhou: professionalId inválido');
       showToast('ID do profissional inválido. Tente novamente.', 'error');
       return;
     }
-    console.log('[APPOINTMENT] ✅ ProfessionalId válido:', professional.id);
 
     // Validar token antes de fazer a requisição
-    console.log('[APPOINTMENT] 🔐 Validando token...');
     if (!token || !isTokenValid(token)) {
-      console.log('[APPOINTMENT] ❌ Validação falhou: token inválido ou expirado');
       setAlertModal({
         visible: true,
         title: 'Sessão Expirada',
@@ -207,83 +161,46 @@ export default function AppointmentBooking({
       return;
     }
 
-    console.log('[APPOINTMENT] ✅ Todas as validações passaram, iniciando requisição...');
     setLoading(true);
 
     try {
-      console.log('[APPOINTMENT] 🔄 Preparando dados para envio...');
-      
       // Validar professionalId é um UUID válido
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const trimmedProfessionalId = professional.id.trim();
-      console.log('[APPOINTMENT] Validando formato UUID do professionalId:', trimmedProfessionalId);
       
       if (!uuidRegex.test(trimmedProfessionalId)) {
-        console.log('[APPOINTMENT] ❌ Formato UUID inválido');
         throw new Error('ID do profissional inválido. Formato UUID esperado.');
       }
-      console.log('[APPOINTMENT] ✅ Formato UUID válido');
 
       // Garantir que a data está em formato ISO 8601 válido
-      // Usar UTC para evitar problemas de timezone
       const scheduledAtISO = appointmentDateTime.toISOString();
-      console.log('[APPOINTMENT] Data formatada para ISO 8601:', scheduledAtISO);
       
-      // Validar formato antes de enviar
       if (!scheduledAtISO || isNaN(appointmentDateTime.getTime())) {
-        console.log('[APPOINTMENT] ❌ Data/hora inválida após formatação');
         throw new Error('Data/hora inválida');
       }
 
-      // Validar que a string ISO está no formato correto (deve terminar com Z ou ter timezone)
       if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(scheduledAtISO)) {
-        console.log('[APPOINTMENT] ❌ Formato ISO 8601 inválido');
         throw new Error('Formato de data inválido. Use formato ISO 8601.');
       }
-      console.log('[APPOINTMENT] ✅ Formato ISO 8601 válido');
 
       const appointmentData: CreateAppointmentDto = {
         professionalId: trimmedProfessionalId,
         scheduledAt: scheduledAtISO,
       };
 
-      console.log('[APPOINTMENT] 📤 Dados preparados para envio:');
-      console.log('[APPOINTMENT]   - professionalId:', appointmentData.professionalId);
-      console.log('[APPOINTMENT]   - scheduledAt:', appointmentData.scheduledAt);
-      console.log('[APPOINTMENT] 🚀 Chamando appointmentService.createAppointment...');
-
-      let appointment;
-      try {
-        appointment = await appointmentService.createAppointment(token, appointmentData);
-        console.log('[APPOINTMENT] ✅ Requisição bem-sucedida!');
-        console.log('[APPOINTMENT] 📥 Resposta recebida:');
-        console.log('[APPOINTMENT]   - Appointment ID:', appointment?.id);
-        console.log('[APPOINTMENT]   - Scheduled At:', appointment?.scheduledAt);
-      } catch (apiError: any) {
-        console.log('[APPOINTMENT] ❌ Erro na requisição ao serviço');
-        console.log('[APPOINTMENT] Tipo do erro:', typeof apiError);
-        console.log('[APPOINTMENT] Mensagem do erro:', apiError?.message);
-        console.log('[APPOINTMENT] Status code:', apiError?.response?.status);
-        // Re-throw para ser tratado no catch externo
-        throw apiError;
-      }
+      const appointment = await appointmentService.createAppointment(token, appointmentData);
 
       // Verificar se appointment é válido
-      console.log('[APPOINTMENT] 🔍 Validando resposta do servidor...');
       if (!appointment || !appointment.id) {
-        console.log('[APPOINTMENT] ❌ Resposta inválida do servidor');
-        console.log('[APPOINTMENT] Appointment recebido:', appointment);
         if (isMountedRef.current) {
           showToast('Resposta inválida do servidor. Tente novamente.', 'error');
           setLoading(false);
         }
         return;
       }
-      console.log('[APPOINTMENT] ✅ Resposta do servidor válida');
       
       // Garantir que selectedDate e selectedTime existem antes de usar
       if (!selectedDate || !selectedTime) {
-        console.error('Estado inválido: selectedDate ou selectedTime é null');
         if (isMountedRef.current) {
           showToast('Erro interno. Tente novamente.', 'error');
           setLoading(false);
@@ -291,208 +208,79 @@ export default function AppointmentBooking({
         return;
       }
       
-      // Salvar valores antes de resetar estado
-      console.log('[APPOINTMENT] 💾 Salvando valores para exibição...');
       const savedDate = selectedDate;
       const savedTime = selectedTime;
       const savedProfessionalName = professional.fullName;
       
-      console.log('[APPOINTMENT] 📝 Preparando mensagem de sucesso...');
-      // Resetar loading antes de mostrar o alert
       if (isMountedRef.current) {
         setLoading(false);
-        console.log('[APPOINTMENT] ✅ Loading resetado');
       }
       
-      // Usar setTimeout para garantir que o estado seja atualizado (mais compatível com Android)
       const initialDelay = Platform.OS === 'android' ? 200 : 100;
-      console.log('[APPOINTMENT] ⏱️ Aguardando', initialDelay, 'ms antes de exibir alert (Platform:', Platform.OS, ')');
       
       setTimeout(() => {
         if (!isMountedRef.current) {
-          console.log('[APPOINTMENT] ⚠️ Componente desmontado, cancelando exibição do alert');
           return;
         }
         
         try {
-          // Validar valores antes de usar no Alert
           const message = `Consulta agendada com ${savedProfessionalName || 'o profissional'} para ${formatDate(savedDate)} às ${savedTime || 'horário selecionado'}`;
-          console.log('[APPOINTMENT] 📢 Mensagem de sucesso preparada:', message);
-          
-          // No Android, usar um delay maior antes de mostrar o Alert para evitar crashes
           const alertDelay = Platform.OS === 'android' ? 500 : 100;
-          console.log('[APPOINTMENT] ⏱️ Aguardando', alertDelay, 'ms antes de exibir Alert...');
           
           setTimeout(() => {
             if (!isMountedRef.current) {
-              console.log('[APPOINTMENT] ⚠️ Componente desmontado antes de exibir alert');
               return;
             }
             
             try {
-              console.log('[APPOINTMENT] 🎉 Exibindo modal de sucesso...');
               setAlertModal({
                 visible: true,
                 title: 'Sucesso! ✅',
                 message: message,
                 type: 'success',
                 onConfirm: () => {
-                  console.log('[APPOINTMENT] 👆 Botão OK pressionado no modal');
                   setAlertModal((prev) => ({ ...prev, visible: false }));
-                  // Usar um pequeno delay para garantir que o modal foi completamente fechado
                   const callbackDelay = Platform.OS === 'android' ? 300 : 200;
-                  console.log('[APPOINTMENT] ⏱️ Aguardando', callbackDelay, 'ms antes de chamar onSuccess...');
                   
                   setTimeout(() => {
                     if (isMountedRef.current && onSuccess) {
                       try {
-                        console.log('[APPOINTMENT] 🔄 Chamando onSuccess callback...');
                         onSuccess();
-                        console.log('[APPOINTMENT] ✅ onSuccess chamado com sucesso');
-                        console.log('[APPOINTMENT] ===== PROCESSO DE AGENDAMENTO CONCLUÍDO COM SUCESSO =====');
                       } catch (error) {
-                        console.error('[APPOINTMENT] ❌ Erro ao chamar onSuccess:', error);
+                        console.error('[APPOINTMENT] Erro ao chamar onSuccess:', error);
                       }
-                    } else {
-                      console.log('[APPOINTMENT] ⚠️ Componente desmontado ou onSuccess não disponível');
                     }
                   }, callbackDelay);
                 },
               });
-              console.log('[APPOINTMENT] ✅ Modal de sucesso configurado');
             } catch (alertError) {
-              console.error('[APPOINTMENT] ❌ Erro crítico ao exibir modal de sucesso:', alertError);
-              // Tentar chamar onSuccess mesmo com erro
+              console.error('[APPOINTMENT] Erro ao exibir modal de sucesso:', alertError);
               setTimeout(() => {
                 if (isMountedRef.current && onSuccess) {
                   try {
-                    console.log('[APPOINTMENT] 🔄 Chamando onSuccess após erro no modal...');
                     onSuccess();
                   } catch (error) {
-                    console.error('[APPOINTMENT] ❌ Erro ao chamar onSuccess após erro no modal:', error);
+                    console.error('[APPOINTMENT] Erro ao chamar onSuccess:', error);
                   }
                 }
               }, 100);
             }
           }, alertDelay);
         } catch (error) {
-          console.error('[APPOINTMENT] ❌ Erro ao preparar Alert de sucesso:', error);
-          // Tentar chamar onSuccess mesmo com erro
+          console.error('[APPOINTMENT] Erro ao preparar alert de sucesso:', error);
           setTimeout(() => {
             if (isMountedRef.current && onSuccess) {
               try {
-                console.log('[APPOINTMENT] 🔄 Chamando onSuccess após erro na preparação...');
                 onSuccess();
               } catch (callbackError) {
-                console.error('[APPOINTMENT] ❌ Erro ao chamar onSuccess após erro:', callbackError);
+                console.error('[APPOINTMENT] Erro ao chamar onSuccess:', callbackError);
               }
             }
           }, 100);
         }
       }, initialDelay);
     } catch (error: any) {
-      console.log('[APPOINTMENT] ❌ ===== ERRO NO PROCESSO DE AGENDAMENTO =====');
-      console.log('[APPOINTMENT] Timestamp do erro:', new Date().toISOString());
-      
-      // Logs protegidos contra erros de serialização
-      try {
-        console.error('[APPOINTMENT] Erro capturado:', error);
-        console.log('[APPOINTMENT] Tipo do erro:', typeof error);
-        console.log('[APPOINTMENT] Nome do erro:', error?.name);
-        console.log('[APPOINTMENT] Mensagem do erro:', error?.message);
-        console.log('[APPOINTMENT] Stack trace:', error?.stack);
-        
-        if (error && typeof error === 'object') {
-          try {
-            console.log('[APPOINTMENT] Erro completo (JSON):', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-          } catch (stringifyError) {
-            console.error('[APPOINTMENT] Erro ao serializar erro completo:', stringifyError);
-          }
-        }
-        
-        if (error?.response) {
-          console.log('[APPOINTMENT] Status code:', error.response.status);
-          console.log('[APPOINTMENT] Status text:', error.response.statusText);
-          try {
-            const errorData = error.response.data;
-            console.log('[APPOINTMENT] ===== RESPONSE DATA COMPLETO =====');
-            
-            // Forçar exibição completa
-            try {
-              const errorDataString = JSON.stringify(errorData, null, 2);
-              console.log('[APPOINTMENT]', errorDataString);
-              // Logar linha por linha para garantir
-              errorDataString.split('\n').forEach((line: string) => {
-                console.log('[APPOINTMENT]', line);
-              });
-            } catch (stringifyError) {
-              console.log('[APPOINTMENT] Erro ao stringify, mostrando propriedades:');
-              if (errorData && typeof errorData === 'object') {
-                Object.keys(errorData).forEach((key) => {
-                  try {
-                    console.log(`[APPOINTMENT] ${key}:`, JSON.stringify(errorData[key], null, 2));
-                  } catch (e) {
-                    console.log(`[APPOINTMENT] ${key}:`, errorData[key]);
-                  }
-                });
-              }
-            }
-            console.log('[APPOINTMENT] ===== FIM RESPONSE DATA =====');
-            
-            // Extrair mensagem de erro de diferentes formatos
-            let errorMessage = 'Erro desconhecido';
-            
-            if (errorData?.message) {
-              if (typeof errorData.message === 'string') {
-                errorMessage = errorData.message;
-              } else if (Array.isArray(errorData.message)) {
-                errorMessage = errorData.message.join(', ');
-              } else {
-                errorMessage = JSON.stringify(errorData.message);
-              }
-            } else if (errorData?.data?.message) {
-              errorMessage = typeof errorData.data.message === 'string'
-                ? errorData.data.message
-                : JSON.stringify(errorData.data.message);
-            } else if (errorData?.error) {
-              errorMessage = errorData.error;
-            } else if (typeof errorData === 'string') {
-              errorMessage = errorData;
-            }
-            
-            console.log('[APPOINTMENT] ===== MENSAGEM DE ERRO EXTRAÍDA =====');
-            console.log('[APPOINTMENT] Mensagem:', errorMessage);
-            console.log('[APPOINTMENT] Tipo da mensagem:', typeof errorMessage);
-            
-            // Se houver validações, mostrar detalhes
-            if (errorData?.message && Array.isArray(errorData.message)) {
-              console.log('[APPOINTMENT] ===== ERROS DE VALIDAÇÃO DETALHADOS =====');
-              errorData.message.forEach((err: any, index: number) => {
-                console.log(`[APPOINTMENT] Erro ${index + 1}:`, JSON.stringify(err, null, 2));
-                if (err?.constraints) {
-                  console.log(`[APPOINTMENT]   Constraints:`, JSON.stringify(err.constraints, null, 2));
-                }
-                if (err?.property) {
-                  console.log(`[APPOINTMENT]   Property:`, err.property);
-                }
-              });
-            }
-            
-            console.log('[APPOINTMENT] Response headers:', JSON.stringify(error.response.headers, null, 2));
-          } catch (dataError) {
-            console.error('[APPOINTMENT] Erro ao logar response data:', dataError);
-          }
-        } else if (error?.request) {
-          console.log('[APPOINTMENT] Erro de rede - requisição enviada mas sem resposta');
-          console.log('[APPOINTMENT] Request URL:', error.config?.url);
-          console.log('[APPOINTMENT] Request method:', error.config?.method);
-          console.log('[APPOINTMENT] Request data:', JSON.stringify(error.config?.data, null, 2));
-        } else {
-          console.log('[APPOINTMENT] Erro antes de enviar requisição');
-        }
-      } catch (logError) {
-        console.error('[APPOINTMENT] Erro crítico ao logar erro:', logError);
-      }
+      console.error('[APPOINTMENT] Erro ao agendar consulta:', error?.message || error);
       
       if (!isMountedRef.current) {
         console.log('[APPOINTMENT] ⚠️ Componente desmontado, não exibindo alert de erro');

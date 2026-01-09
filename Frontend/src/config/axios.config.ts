@@ -40,7 +40,6 @@ api.interceptors.response.use(
       
       // Se for erro 401 (não autorizado), token provavelmente expirou
       if (statusCode === 401) {
-        console.log('Token expirado ou inválido (401), fazendo logout automático');
         
         // Remover token do storage
         try {

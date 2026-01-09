@@ -103,14 +103,22 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
 
       // Dados específicos para PATIENT
       if (userType === 'PATIENT') {
-        // Converter data de nascimento para ISO string
-        const birthDateObj = new Date(birthDate);
-        if (isNaN(birthDateObj.getTime())) {
-          showToast('Data de nascimento inválida', 'warning');
+        // Converter data de nascimento de DD/MM/YYYY para ISO string
+        const birthDateObj = parseBirthDate(birthDate);
+        if (!birthDateObj) {
+          showToast('Data de nascimento inválida. Use o formato DD/MM/AAAA', 'warning');
           setLoading(false);
           return;
         }
-        registerData.birthDate = birthDateObj.toISOString();
+        
+        // Verificar se a data não é no futuro
+        if (birthDateObj > new Date()) {
+          showToast('Data de nascimento não pode ser no futuro', 'warning');
+          setLoading(false);
+          return;
+        }
+        
+        registerData.birthDate = birthDateObj.toISOString().split('T')[0]; // Formato YYYY-MM-DD
       }
 
       // Dados específicos para PROFESSIONAL
@@ -154,6 +162,74 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
   const handleCpfChange = (value: string) => {
     const formatted = formatCpf(value);
     setCpf(formatted);
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      if (numbers.length <= 10) {
+        return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3').replace(/\($| $|-$/g, '');
+      } else {
+        return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').replace(/\($| $|-$/g, '');
+      }
+    }
+    return phone;
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    setPhone(formatted);
+  };
+
+  const formatBirthDate = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Limita a 8 dígitos (DDMMYYYY)
+    const limited = numbers.slice(0, 8);
+    
+    // Aplica a máscara DD/MM/YYYY
+    if (limited.length <= 2) {
+      return limited;
+    } else if (limited.length <= 4) {
+      return `${limited.slice(0, 2)}/${limited.slice(2)}`;
+    } else {
+      return `${limited.slice(0, 2)}/${limited.slice(2, 4)}/${limited.slice(4)}`;
+    }
+  };
+
+  const handleBirthDateChange = (value: string) => {
+    const formatted = formatBirthDate(value);
+    setBirthDate(formatted);
+  };
+
+  const parseBirthDate = (dateString: string): Date | null => {
+    // Remove formatação (barras)
+    const numbers = dateString.replace(/\D/g, '');
+    
+    // Deve ter 8 dígitos (DDMMYYYY)
+    if (numbers.length !== 8) {
+      return null;
+    }
+    
+    const day = parseInt(numbers.slice(0, 2), 10);
+    const month = parseInt(numbers.slice(2, 4), 10);
+    const year = parseInt(numbers.slice(4, 8), 10);
+    
+    // Validação básica
+    if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > new Date().getFullYear()) {
+      return null;
+    }
+    
+    // Cria a data (mês no Date é 0-indexed, então subtrai 1)
+    const date = new Date(year, month - 1, day);
+    
+    // Verifica se a data é válida (ex: 31/02 não é válido)
+    if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
+      return null;
+    }
+    
+    return date;
   };
 
   return (
@@ -275,7 +351,7 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
                       placeholder="(11) 99999-9999"
                       placeholderTextColor="#999"
                       value={phone}
-                      onChangeText={setPhone}
+                      onChangeText={handlePhoneChange}
                       keyboardType="phone-pad"
                     />
                   </View>
@@ -287,14 +363,15 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
                     <Text style={styles.icon}>📅</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="1990-01-01"
+                      placeholder="DD/MM/AAAA"
                       placeholderTextColor="#999"
                       value={birthDate}
-                      onChangeText={setBirthDate}
-                      keyboardType="default"
+                      onChangeText={handleBirthDateChange}
+                      keyboardType="numeric"
+                      maxLength={10}
                     />
                   </View>
-                  <Text style={styles.helperText}>Formato: YYYY-MM-DD (ex: 1990-01-01)</Text>
+                  <Text style={styles.helperText}>Formato: DD/MM/AAAA (ex: 15/05/1990)</Text>
                 </View>
               </>
             )}

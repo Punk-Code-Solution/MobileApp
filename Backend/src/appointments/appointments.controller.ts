@@ -28,10 +28,6 @@ export class AppointmentsController {
     @Body() createAppointmentDto: CreateAppointmentDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    console.log('[APPOINTMENTS-CONTROLLER] Recebendo requisição de criação de agendamento');
-    console.log('[APPOINTMENTS-CONTROLLER] DTO recebido:', JSON.stringify(createAppointmentDto, null, 2));
-    console.log('[APPOINTMENTS-CONTROLLER] User ID:', user.userId);
-    console.log('[APPOINTMENTS-CONTROLLER] User Role:', user.role);
     return this.appointmentsService.create(createAppointmentDto, user.userId, user.role);
   }
 

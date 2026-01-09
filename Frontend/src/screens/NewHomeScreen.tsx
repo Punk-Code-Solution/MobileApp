@@ -49,14 +49,9 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
       // Garantir que sempre seja um array
       const doctorsArray = Array.isArray(doctorsData) ? doctorsData : [];
       
-      console.log('Doctors recebidos:', doctorsArray.length);
       setDoctors(doctorsArray);
     } catch (error: any) {
       console.error('Erro ao buscar profissionais:', error);
-      // Se for erro 401, não é necessário logar como erro crítico
-      if (error.response?.status === 401) {
-        console.log('Token expirado ao buscar profissionais');
-      }
       setDoctors([]); // Garantir que seja um array vazio em caso de erro
     } finally {
       setLoading(false);

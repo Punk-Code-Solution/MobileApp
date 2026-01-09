@@ -54,3 +54,4 @@ lerna-debug.log*
 # OS
 Thumbs.db
 .env.*.local
+Backend/prisma/neon-schema.sql

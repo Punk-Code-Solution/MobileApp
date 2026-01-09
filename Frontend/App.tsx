@@ -55,16 +55,12 @@ export default function App() {
             const parsedUserData = JSON.parse(storedUserData);
             setToken(storedToken);
             setUserData(parsedUserData);
-            console.log('Token e dados do usuário recuperados do AsyncStorage');
-            
             // Verificar se paciente precisa completar perfil
             if (parsedUserData?.role === 'PATIENT' && parsedUserData?.hasCompleteProfile === false) {
-              console.log('Paciente sem perfil completo detectado no carregamento inicial');
               setCurrentScreen('completePatientProfile');
             }
           } else {
             // Token expirado, remover do storage
-            console.log('Token expirado, removendo do storage');
             await AsyncStorage.multiRemove([TOKEN_KEY, USER_DATA_KEY]);
           }
         }
@@ -84,15 +80,11 @@ export default function App() {
     try {
       const response = await authService.login({ email, password });
 
-      console.log('Login Sucesso - Response completa:', JSON.stringify(response, null, 2));
-      
       // O authService já extrai os dados do TransformInterceptor
       const token = response.access_token;
       
-      console.log('Token extraído:', token ? 'Token encontrado' : 'Token NÃO encontrado');
-      
       if (!token) {
-        console.error('Token não encontrado na resposta:', response);
+        console.error('Token não encontrado na resposta');
         Alert.alert('Erro', 'Token de autenticação não recebido');
         return;
       }
@@ -114,7 +106,6 @@ export default function App() {
       
       // Se for paciente e não tiver perfil completo, redirecionar para completar cadastro
       if (userRole === 'PATIENT' && !hasCompleteProfile) {
-        console.log('Paciente sem perfil completo, redirecionando para completar cadastro');
         // Salvar token temporariamente para usar na tela de completar cadastro
         await AsyncStorage.multiSet([
           [TOKEN_KEY, token],
@@ -135,7 +126,6 @@ export default function App() {
 
       setToken(token);
       setUserData(response.user);
-      console.log('Token e dados do usuário salvos no AsyncStorage');
     } catch (error: any) {
       console.error('Erro login:', error);
       const msg = error.response?.data?.message || error.message || 'Falha ao conectar ao servidor';
@@ -203,7 +193,6 @@ export default function App() {
 
   const handleResendCode = () => {
     // Lógica para reenviar código - pode ser implementada aqui
-    console.log('Reenviando código para:', registerEmail);
   };
 
   // --- ECRÃ DE LOGADO (HomeScreen com navegação por tabs) ---
@@ -229,15 +218,12 @@ export default function App() {
   }
 
   if (token && userData?.hasCompleteProfile !== false) {
-    console.log('Token existe, renderizando HomeScreen. Token:', token.substring(0, 20) + '...');
     return (
       <ToastProvider>
         <HomeScreen token={token} onLogout={handleLogout} userRole={userData?.role} />
       </ToastProvider>
     );
   }
-  
-  console.log('Sem token, renderizando tela de autenticação. currentScreen:', currentScreen);
 
   // --- TELAS DE AUTENTICAÇÃO ---
   const renderAuthScreen = () => {

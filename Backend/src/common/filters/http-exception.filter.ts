@@ -30,17 +30,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
-    // Logar erro para debug
-    console.log('[HTTP-EXCEPTION-FILTER] ===== ERRO CAPTURADO =====');
-    console.log('[HTTP-EXCEPTION-FILTER] Status:', status);
-    console.log('[HTTP-EXCEPTION-FILTER] Path:', request.url || '/');
-    console.log('[HTTP-EXCEPTION-FILTER] Method:', request.method);
-    console.log('[HTTP-EXCEPTION-FILTER] Message type:', typeof message);
-    console.log('[HTTP-EXCEPTION-FILTER] Message:', JSON.stringify(message, null, 2));
-    
-    if (request.body) {
-      console.log('[HTTP-EXCEPTION-FILTER] Request body:', JSON.stringify(request.body, null, 2));
-    }
+    // Lista de paths que devem ser ignorados nos logs (requisições comuns do navegador)
+    const ignoredPaths = ['/favicon.ico', '/robots.txt', '/apple-touch-icon.png', '/favicon-32x32.png', '/favicon-16x16.png'];
+    const shouldLog = !ignoredPaths.includes(request.url || '/') || status >= 500;
 
     // Tratar mensagens de validação (array de erros do class-validator)
     let formattedMessage: string | string[] = typeof message === 'string' 
@@ -49,14 +41,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     
     // Se for array (erros de validação), formatar melhor
     if (Array.isArray(formattedMessage)) {
-      console.log('[HTTP-EXCEPTION-FILTER] Mensagem é array com', formattedMessage.length, 'itens');
-      formattedMessage = formattedMessage.map((err: any, index: number) => {
-        console.log(`[HTTP-EXCEPTION-FILTER] Erro ${index}:`, JSON.stringify(err, null, 2));
+      formattedMessage = formattedMessage.map((err: any) => {
         if (typeof err === 'string') return err;
         if (err?.constraints) {
-          // Extrair mensagens de constraints
           const constraints = Object.values(err.constraints || {});
-          console.log(`[HTTP-EXCEPTION-FILTER] Constraints do erro ${index}:`, constraints);
           return constraints.join(', ');
         }
         return JSON.stringify(err);
@@ -70,8 +58,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message: formattedMessage,
     };
 
-    console.log('[HTTP-EXCEPTION-FILTER] Resposta de erro:', JSON.stringify(errorResponse, null, 2));
-    console.log('[HTTP-EXCEPTION-FILTER] ===== FIM ERRO =====');
+    // Logar apenas erros críticos (500+)
+    if (shouldLog && status >= 500) {
+      console.error(`[HTTP-EXCEPTION] ${request.method} ${request.url} - Status: ${status}`, formattedMessage);
+    }
 
     response.status(status).send(errorResponse);
   }

@@ -43,9 +43,6 @@ export function useUnreadCounts(token: string) {
       } catch (error: any) {
         // Se o endpoint de mensagens não estiver disponível (404), usar 0
         // Não logar erro se for 404 (endpoint ainda não implementado)
-        if (error?.response?.status !== 404) {
-          console.log('Erro ao buscar conversas para contador:', error);
-        }
         // Em caso de erro, usar 0 (sem mensagens não lidas)
         unreadMessages = 0;
       }
