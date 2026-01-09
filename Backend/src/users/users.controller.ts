@@ -4,7 +4,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CompletePatientProfileDto } from './dto/complete-patient-profile.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../common/decorators/current-user.decorator';
+import { CurrentUser, type CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 @Controller('users')
 export class UsersController {
