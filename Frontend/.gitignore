@@ -35,6 +35,10 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# Prisma
+Backend/prisma/neon-schema.sql
+Backend/prisma/neon-inserts.sql
+
 # node.js
 #
 node_modules/

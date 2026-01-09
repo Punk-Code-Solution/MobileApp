@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
@@ -14,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
+import { useToast } from '../hooks/useToast';
+import AlertModal from '../components/AlertModal';
 
 interface RateAppointmentScreenProps {
   appointment: Appointment;
@@ -31,6 +32,8 @@ export default function RateAppointmentScreen({
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
+  const { showToast } = useToast();
 
   const professionalName = appointment.professional?.fullName || 'Profissional';
   const specialtyName =
@@ -38,7 +41,7 @@ export default function RateAppointmentScreen({
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      Alert.alert('Atenção', 'Por favor, selecione uma avaliação.');
+      showToast('Por favor, selecione uma avaliação.', 'warning');
       return;
     }
 
@@ -50,25 +53,14 @@ export default function RateAppointmentScreen({
         comment: comment.trim() || undefined,
       });
 
-      Alert.alert('Sucesso! ✅', 'Sua avaliação foi enviada com sucesso.', [
-        {
-          text: 'OK',
-          onPress: () => {
-            if (onSuccess) {
-              onSuccess();
-            } else {
-              onBack();
-            }
-          },
-        },
-      ]);
+      setSuccessModal(true);
     } catch (error: any) {
       console.error('Erro ao avaliar consulta:', error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         'Não foi possível enviar sua avaliação. Tente novamente.';
-      Alert.alert('Erro', errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -158,6 +150,22 @@ export default function RateAppointmentScreen({
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal de Sucesso */}
+      <AlertModal
+        visible={successModal}
+        title="Sucesso! ✅"
+        message="Sua avaliação foi enviada com sucesso."
+        type="success"
+        onConfirm={() => {
+          setSuccessModal(false);
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            onBack();
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }

@@ -26,9 +26,10 @@ export interface RegisterRequest {
 export interface User {
   id: string;
   email: string;
-  fullName: string;
+  fullName?: string;
   role: UserRole;
   cpf?: string;
   profession?: string;
+  hasCompleteProfile?: boolean; // Indica se o perfil está completo
 }
 

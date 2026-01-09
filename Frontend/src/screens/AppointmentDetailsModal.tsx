@@ -6,7 +6,6 @@ import {
   Modal,
   TouchableOpacity,
   Image,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -15,6 +14,8 @@ import { Appointment } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
 import { messageService } from '../services/api/message.service';
 import RateAppointmentScreen from './RateAppointmentScreen';
+import { useToast } from '../hooks/useToast';
+import AlertModal from '../components/AlertModal';
 
 interface AppointmentDetailsModalProps {
   appointment: Appointment;
@@ -54,6 +55,13 @@ export default function AppointmentDetailsModal({
 }: AppointmentDetailsModalProps) {
   const [loading, setLoading] = useState(false);
   const [modalState, setModalState] = useState<ModalState>('details');
+  const [cancelConfirmModal, setCancelConfirmModal] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ visible: boolean; message: string }>({
+    visible: false,
+    message: '',
+  });
+  const { showToast } = useToast();
   const doctorName = appointment.professional?.fullName || 'Médico';
   const specialtyName =
     appointment.professional?.specialties?.[0]?.specialty?.name || 'Especialista';
@@ -65,49 +73,28 @@ export default function AppointmentDetailsModal({
     appointment.status !== 'IN_PROGRESS';
 
   const handleCancel = () => {
-    Alert.alert(
-      'Cancelar Consulta',
-      `Deseja realmente cancelar a consulta com ${doctorName}?`,
-      [
-        {
-          text: 'Não',
-          style: 'cancel',
-        },
-        {
-          text: 'Sim, Cancelar',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await appointmentService.cancelAppointment(token, appointment.id);
-              Alert.alert('Sucesso', 'Consulta cancelada com sucesso.', [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    onCancelSuccess?.();
-                    onClose();
-                  },
-                },
-              ]);
-            } catch (error: any) {
-              console.error('Erro ao cancelar:', error);
-              if (!error.response) {
-                Alert.alert(
-                  'Sem Conexão',
-                  'Verifique sua conexão com a internet e tente novamente.'
-                );
-                return;
-              }
-              const errorMessage =
-                error.response?.data?.message || 'Não foi possível cancelar a consulta.';
-              Alert.alert('Erro', errorMessage);
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
-    );
+    setCancelConfirmModal(true);
+  };
+
+  const confirmCancel = async () => {
+    setCancelConfirmModal(false);
+    setLoading(true);
+    try {
+      await appointmentService.cancelAppointment(token, appointment.id);
+      setSuccessModal(true);
+    } catch (error: any) {
+      console.error('Erro ao cancelar:', error);
+      if (!error.response) {
+        showToast('Verifique sua conexão com a internet e tente novamente.', 'error');
+        setLoading(false);
+        return;
+      }
+      const errorMessage =
+        error.response?.data?.message || 'Não foi possível cancelar a consulta.';
+      setErrorModal({ visible: true, message: errorMessage });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -143,10 +130,7 @@ export default function AppointmentDetailsModal({
           onClose();
         }
       } else {
-        Alert.alert(
-          'Erro',
-          'Não foi possível iniciar a conversa. Tente novamente.'
-        );
+        showToast('Não foi possível iniciar a conversa. Tente novamente.', 'error');
       }
     } finally {
       setLoading(false);
@@ -311,6 +295,41 @@ export default function AppointmentDetailsModal({
           </ScrollView>
         </View>
       </View>
+
+      {/* Modal de Confirmação de Cancelamento */}
+      <AlertModal
+        visible={cancelConfirmModal}
+        title="Cancelar Consulta"
+        message={`Deseja realmente cancelar a consulta com ${doctorName}?`}
+        type="warning"
+        confirmText="Sim, Cancelar"
+        cancelText="Não"
+        showCancel={true}
+        onConfirm={confirmCancel}
+        onCancel={() => setCancelConfirmModal(false)}
+      />
+
+      {/* Modal de Sucesso */}
+      <AlertModal
+        visible={successModal}
+        title="Sucesso! ✅"
+        message="Consulta cancelada com sucesso."
+        type="success"
+        onConfirm={() => {
+          setSuccessModal(false);
+          onCancelSuccess?.();
+          onClose();
+        }}
+      />
+
+      {/* Modal de Erro */}
+      <AlertModal
+        visible={errorModal.visible}
+        title="Erro"
+        message={errorModal.message}
+        type="error"
+        onConfirm={() => setErrorModal({ visible: false, message: '' })}
+      />
     </Modal>
   );
 }

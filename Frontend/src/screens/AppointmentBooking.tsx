@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Alert,
   StatusBar,
   Platform,
 } from 'react-native';
@@ -16,6 +15,8 @@ import { colors } from '../theme/colors';
 import { Professional, CreateAppointmentDto } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
 import { isTokenValid } from '../utils/token.util';
+import { useToast } from '../hooks/useToast';
+import AlertModal from '../components/AlertModal';
 
 interface AppointmentBookingProps {
   professional: Professional;
@@ -83,7 +84,21 @@ export default function AppointmentBooking({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [alertModal, setAlertModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    onConfirm?: () => void;
+    showCancel?: boolean;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
   const isMountedRef = useRef(true);
+  const { showToast } = useToast();
   
   useEffect(() => {
     return () => {
@@ -113,11 +128,7 @@ export default function AppointmentBooking({
 
     if (!selectedDate || !selectedTime) {
       console.log('[APPOINTMENT] ❌ Validação falhou: data ou horário não selecionados');
-      try {
-        Alert.alert('Atenção', 'Por favor, selecione uma data e um horário');
-      } catch (error) {
-        console.error('Erro ao exibir alert de validação:', error);
-      }
+      showToast('Por favor, selecione uma data e um horário', 'warning');
       return;
     }
 
@@ -169,14 +180,7 @@ export default function AppointmentBooking({
     
     if (appointmentDateTime < minTime) {
       console.log('[APPOINTMENT] ❌ Validação falhou: horário muito próximo (mínimo 2h de antecedência)');
-      try {
-        Alert.alert(
-          'Horário inválido',
-          'Por favor, selecione um horário com pelo menos 2 horas de antecedência'
-        );
-      } catch (error) {
-        console.error('Erro ao exibir alert de horário inválido:', error);
-      }
+      showToast('Por favor, selecione um horário com pelo menos 2 horas de antecedência', 'warning');
       return;
     }
 
@@ -184,11 +188,7 @@ export default function AppointmentBooking({
     console.log('[APPOINTMENT] 🔍 Validando professionalId...');
     if (!professional.id || typeof professional.id !== 'string') {
       console.log('[APPOINTMENT] ❌ Validação falhou: professionalId inválido');
-      try {
-        Alert.alert('Erro', 'ID do profissional inválido. Tente novamente.');
-      } catch (error) {
-        console.error('[APPOINTMENT] Erro ao exibir alert de ID inválido:', error);
-      }
+      showToast('ID do profissional inválido. Tente novamente.', 'error');
       return;
     }
     console.log('[APPOINTMENT] ✅ ProfessionalId válido:', professional.id);
@@ -197,15 +197,13 @@ export default function AppointmentBooking({
     console.log('[APPOINTMENT] 🔐 Validando token...');
     if (!token || !isTokenValid(token)) {
       console.log('[APPOINTMENT] ❌ Validação falhou: token inválido ou expirado');
-      try {
-        Alert.alert(
-          'Sessão Expirada',
-          'Sua sessão expirou. Por favor, faça login novamente.',
-          [{ text: 'OK' }]
-        );
-      } catch (error) {
-        console.error('Erro ao exibir alert de token expirado:', error);
-      }
+      setAlertModal({
+        visible: true,
+        title: 'Sessão Expirada',
+        message: 'Sua sessão expirou. Por favor, faça login novamente.',
+        type: 'warning',
+        onConfirm: () => setAlertModal((prev) => ({ ...prev, visible: false })),
+      });
       return;
     }
 
@@ -276,7 +274,7 @@ export default function AppointmentBooking({
         console.log('[APPOINTMENT] ❌ Resposta inválida do servidor');
         console.log('[APPOINTMENT] Appointment recebido:', appointment);
         if (isMountedRef.current) {
-          Alert.alert('Erro', 'Resposta inválida do servidor. Tente novamente.');
+          showToast('Resposta inválida do servidor. Tente novamente.', 'error');
           setLoading(false);
         }
         return;
@@ -287,7 +285,7 @@ export default function AppointmentBooking({
       if (!selectedDate || !selectedTime) {
         console.error('Estado inválido: selectedDate ou selectedTime é null');
         if (isMountedRef.current) {
-          Alert.alert('Erro', 'Erro interno. Tente novamente.');
+          showToast('Erro interno. Tente novamente.', 'error');
           setLoading(false);
         }
         return;
@@ -332,58 +330,46 @@ export default function AppointmentBooking({
             }
             
             try {
-              console.log('[APPOINTMENT] 🎉 Exibindo Alert de sucesso...');
-              Alert.alert(
-                'Sucesso! ✅',
-                message,
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      console.log('[APPOINTMENT] 👆 Botão OK pressionado no Alert');
-                      // Usar um pequeno delay para garantir que o Alert foi completamente fechado
-                      const callbackDelay = Platform.OS === 'android' ? 500 : 300;
-                      console.log('[APPOINTMENT] ⏱️ Aguardando', callbackDelay, 'ms antes de chamar onSuccess...');
-                      
-                      setTimeout(() => {
-                        if (isMountedRef.current && onSuccess) {
-                          try {
-                            console.log('[APPOINTMENT] 🔄 Chamando onSuccess callback...');
-                            onSuccess();
-                            console.log('[APPOINTMENT] ✅ onSuccess chamado com sucesso');
-                            console.log('[APPOINTMENT] ===== PROCESSO DE AGENDAMENTO CONCLUÍDO COM SUCESSO =====');
-                          } catch (error) {
-                            console.error('[APPOINTMENT] ❌ Erro ao chamar onSuccess:', error);
-                            // Tentar navegar de volta mesmo com erro
-                            if (isMountedRef.current) {
-                              try {
-                                console.log('[APPOINTMENT] 🔄 Tentando chamar onSuccess novamente...');
-                                onSuccess();
-                              } catch (retryError) {
-                                console.error('[APPOINTMENT] ❌ Erro ao tentar novamente onSuccess:', retryError);
-                              }
-                            }
-                          }
-                        } else {
-                          console.log('[APPOINTMENT] ⚠️ Componente desmontado ou onSuccess não disponível');
-                        }
-                      }, callbackDelay);
-                    },
-                  },
-                ],
-                { cancelable: false }
-              );
-              console.log('[APPOINTMENT] ✅ Alert de sucesso exibido');
+              console.log('[APPOINTMENT] 🎉 Exibindo modal de sucesso...');
+              setAlertModal({
+                visible: true,
+                title: 'Sucesso! ✅',
+                message: message,
+                type: 'success',
+                onConfirm: () => {
+                  console.log('[APPOINTMENT] 👆 Botão OK pressionado no modal');
+                  setAlertModal((prev) => ({ ...prev, visible: false }));
+                  // Usar um pequeno delay para garantir que o modal foi completamente fechado
+                  const callbackDelay = Platform.OS === 'android' ? 300 : 200;
+                  console.log('[APPOINTMENT] ⏱️ Aguardando', callbackDelay, 'ms antes de chamar onSuccess...');
+                  
+                  setTimeout(() => {
+                    if (isMountedRef.current && onSuccess) {
+                      try {
+                        console.log('[APPOINTMENT] 🔄 Chamando onSuccess callback...');
+                        onSuccess();
+                        console.log('[APPOINTMENT] ✅ onSuccess chamado com sucesso');
+                        console.log('[APPOINTMENT] ===== PROCESSO DE AGENDAMENTO CONCLUÍDO COM SUCESSO =====');
+                      } catch (error) {
+                        console.error('[APPOINTMENT] ❌ Erro ao chamar onSuccess:', error);
+                      }
+                    } else {
+                      console.log('[APPOINTMENT] ⚠️ Componente desmontado ou onSuccess não disponível');
+                    }
+                  }, callbackDelay);
+                },
+              });
+              console.log('[APPOINTMENT] ✅ Modal de sucesso configurado');
             } catch (alertError) {
-              console.error('[APPOINTMENT] ❌ Erro crítico ao exibir Alert de sucesso:', alertError);
-              // Tentar chamar onSuccess mesmo sem mostrar o alert
+              console.error('[APPOINTMENT] ❌ Erro crítico ao exibir modal de sucesso:', alertError);
+              // Tentar chamar onSuccess mesmo com erro
               setTimeout(() => {
                 if (isMountedRef.current && onSuccess) {
                   try {
-                    console.log('[APPOINTMENT] 🔄 Chamando onSuccess após erro no Alert...');
+                    console.log('[APPOINTMENT] 🔄 Chamando onSuccess após erro no modal...');
                     onSuccess();
                   } catch (error) {
-                    console.error('[APPOINTMENT] ❌ Erro ao chamar onSuccess após erro no Alert:', error);
+                    console.error('[APPOINTMENT] ❌ Erro ao chamar onSuccess após erro no modal:', error);
                   }
                 }
               }, 100);
@@ -516,10 +502,7 @@ export default function AppointmentBooking({
       // Tratar erro de rede
       if (!error.response) {
         if (isMountedRef.current) {
-          Alert.alert(
-            'Sem Conexão',
-            'Verifique sua conexão com a internet e tente novamente.'
-          );
+          showToast('Verifique sua conexão com a internet e tente novamente.', 'error');
           setLoading(false);
         }
         return;
@@ -561,7 +544,16 @@ export default function AppointmentBooking({
           }
           return; // Sair sem mostrar alert, o logout automático vai tratar
         } else if (statusCode === 403) {
-          errorMessage = 'Você não tem permissão para realizar esta ação.';
+          // Verificar se é erro de perfil não encontrado
+          const errorData = error.response.data;
+          const message = errorData?.message || '';
+          
+          if (message.includes('Perfil de paciente não encontrado') || 
+              message.includes('complete seu cadastro')) {
+            errorMessage = 'Perfil de paciente não encontrado. Por favor, complete seu cadastro antes de agendar consultas.';
+          } else {
+            errorMessage = 'Você não tem permissão para realizar esta ação.';
+          }
         } else if (statusCode === 404) {
           errorMessage = 'Profissional não encontrado.';
         } else if (statusCode >= 500) {
@@ -575,23 +567,8 @@ export default function AppointmentBooking({
       }
       
       if (isMountedRef.current) {
-        // No Android, usar um pequeno delay antes de mostrar o Alert para evitar crashes
-        const alertDelay = Platform.OS === 'android' ? 300 : 0;
-        
-        setTimeout(() => {
-          if (!isMountedRef.current) return;
-          
-          try {
-            Alert.alert('Erro ao Agendar', errorMessage);
-          } catch (alertError) {
-            console.error('Erro crítico ao exibir alert:', alertError);
-          }
-          try {
-            setLoading(false);
-          } catch (stateError) {
-            console.error('Erro ao atualizar estado loading:', stateError);
-          }
-        }, alertDelay);
+        setLoading(false);
+        showToast(errorMessage, 'error');
       } else {
         // Se o componente foi desmontado, apenas resetar loading se possível
         try {
@@ -772,6 +749,23 @@ export default function AppointmentBooking({
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Modal de Alerta */}
+      <AlertModal
+        visible={alertModal.visible}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onConfirm={() => {
+          if (alertModal.onConfirm) {
+            alertModal.onConfirm();
+          } else {
+            setAlertModal((prev) => ({ ...prev, visible: false }));
+          }
+        }}
+        onCancel={() => setAlertModal((prev) => ({ ...prev, visible: false }))}
+        showCancel={alertModal.showCancel}
+      />
     </SafeAreaView>
   );
 }

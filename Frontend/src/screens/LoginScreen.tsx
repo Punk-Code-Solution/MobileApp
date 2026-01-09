@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
   ActivityIndicator,
   StatusBar,
   ScrollView,
@@ -13,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
+import { useToast } from '../hooks/useToast';
 
 interface LoginScreenProps {
   onLogin: (email: string, password: string, role: 'PATIENT' | 'PROFESSIONAL') => Promise<void>;
@@ -30,10 +30,11 @@ export default function LoginScreen({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'PATIENT' | 'PROFESSIONAL'>('PATIENT');
+  const { showToast } = useToast();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Atenção', 'Preencha email e senha');
+      showToast('Preencha email e senha', 'warning');
       return;
     }
 

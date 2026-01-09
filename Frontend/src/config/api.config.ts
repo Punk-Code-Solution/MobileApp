@@ -63,7 +63,7 @@ export const API_BASE_URL = getApiBaseUrl();
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
+    REGISTER: '/users', // Registro está em /users, não /auth/register
     FORGOT_PASSWORD: '/auth/forgot-password',
     RESET_PASSWORD: '/auth/reset-password',
     VERIFY_EMAIL: '/auth/verify-email',
@@ -85,6 +85,9 @@ export const API_ENDPOINTS = {
     ME: '/notifications/me',
     MARK_READ: (id: string) => `/notifications/${id}/read`,
     MARK_ALL_READ: '/notifications/read-all',
+  },
+  USERS: {
+    COMPLETE_PATIENT_PROFILE: '/users/complete-patient-profile',
   },
 } as const;
 

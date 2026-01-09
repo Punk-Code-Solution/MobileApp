@@ -10,7 +10,9 @@ node_modules/
 
 # Prisma
 prisma/migrations/
-.prisma/
+.prisma/s
+Backend/prisma/neon-schema.sql
+Backend/prisma/neon-inserts.sql
 
 # Testing
 coverage/

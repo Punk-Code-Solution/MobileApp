@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreateUserDto, UserRole } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CompletePatientProfileDto } from './dto/complete-patient-profile.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashPassword } from '../utils/hash.util';
 
@@ -96,6 +97,63 @@ export class UsersService {
     return this.prisma.user.findUnique({
       where: { email },
     });
+  }
+
+  async findByEmailWithRelations(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        patient: true,
+        professional: true,
+      },
+    });
+  }
+
+  /**
+   * Completa o perfil de paciente para um usuário que já existe mas não tem perfil Patient
+   */
+  async completePatientProfile(userId: string, completePatientProfileDto: CompletePatientProfileDto) {
+    // Verificar se o usuário existe
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { patient: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    // Verificar se o usuário é do tipo PATIENT
+    if (user.role !== 'PATIENT') {
+      throw new ForbiddenException('Apenas pacientes podem completar este perfil.');
+    }
+
+    // Verificar se já tem perfil Patient
+    if (user.patient) {
+      throw new BadRequestException('Perfil de paciente já existe para este usuário.');
+    }
+
+    // Verificar se o CPF já está em uso
+    const existingPatient = await this.prisma.patient.findUnique({
+      where: { cpf: completePatientProfileDto.cpf },
+    });
+
+    if (existingPatient) {
+      throw new BadRequestException('CPF já está em uso por outro paciente.');
+    }
+
+    // Criar o perfil Patient
+    const patient = await this.prisma.patient.create({
+      data: {
+        userId: user.id,
+        fullName: completePatientProfileDto.fullName,
+        phone: completePatientProfileDto.phone,
+        cpf: completePatientProfileDto.cpf,
+        birthDate: new Date(completePatientProfileDto.birthDate),
+      },
+    });
+
+    return patient;
   }
 
 }

@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
   ActivityIndicator,
   StatusBar,
   ScrollView,
@@ -13,6 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../theme/colors';
+import { useToast } from '../hooks/useToast';
+import AlertModal from '../components/AlertModal';
+import { authService } from '../services/api/auth.service';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -27,54 +29,115 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [userType, setUserType] = useState<UserType>('PATIENT');
   const [profession, setProfession] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
+  const { showToast } = useToast();
 
   const handleRegister = async () => {
     // Validações
     if (!fullName || !cpf || !email || !password || !confirmPassword) {
-      Alert.alert('Atenção', 'Preencha todos os campos obrigatórios');
+      showToast('Preencha todos os campos obrigatórios', 'warning');
       return;
     }
 
-    if (userType === 'PROFESSIONAL' && !profession) {
-      Alert.alert('Atenção', 'Preencha o campo Profissão');
+    if (userType === 'PATIENT' && !phone) {
+      showToast('Preencha o campo Telefone', 'warning');
+      return;
+    }
+
+    if (userType === 'PATIENT' && !birthDate) {
+      showToast('Preencha o campo Data de Nascimento', 'warning');
+      return;
+    }
+
+    if (userType === 'PROFESSIONAL' && !licenseNumber) {
+      showToast('Preencha o campo CRM/Registro Profissional', 'warning');
+      return;
+    }
+
+    if (userType === 'PROFESSIONAL' && !price) {
+      showToast('Preencha o campo Valor da Consulta', 'warning');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Atenção', 'A senha deve ter no mínimo 6 caracteres');
+      showToast('A senha deve ter no mínimo 6 caracteres', 'warning');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Atenção', 'As senhas não coincidem');
+      showToast('As senhas não coincidem', 'warning');
       return;
     }
 
     if (!email.includes('@')) {
-      Alert.alert('Atenção', 'Por favor, insira um email válido');
+      showToast('Por favor, insira um email válido', 'warning');
       return;
     }
 
     // Validação básica de CPF (11 dígitos)
     const cpfDigits = cpf.replace(/\D/g, '');
     if (cpfDigits.length !== 11) {
-      Alert.alert('Atenção', 'CPF deve ter 11 dígitos');
+      showToast('CPF deve ter 11 dígitos', 'warning');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Simulação de cadastro - substituir por chamada à API
-      await new Promise<void>((resolve) => setTimeout(() => resolve(), 1500));
+      // Preparar dados para registro
+      const registerData: any = {
+        fullName,
+        email,
+        password,
+        role: userType,
+        phone: phone.replace(/\D/g, ''), // Remove formatação do telefone
+        cpf: cpfDigits,
+      };
+
+      // Dados específicos para PATIENT
+      if (userType === 'PATIENT') {
+        // Converter data de nascimento para ISO string
+        const birthDateObj = new Date(birthDate);
+        if (isNaN(birthDateObj.getTime())) {
+          showToast('Data de nascimento inválida', 'warning');
+          setLoading(false);
+          return;
+        }
+        registerData.birthDate = birthDateObj.toISOString();
+      }
+
+      // Dados específicos para PROFESSIONAL
+      if (userType === 'PROFESSIONAL') {
+        registerData.licenseNumber = licenseNumber;
+        registerData.price = parseFloat(price.replace(',', '.')) || 0;
+      }
+
+      // Chamar API de registro
+      await authService.register(registerData);
       
-      Alert.alert('Sucesso', 'Cadastro realizado! Verifique seu email para ativar a conta.');
-      onSuccess(email);
+      setSuccessModal(true);
     } catch (error: any) {
-      Alert.alert('Erro', 'Não foi possível realizar o cadastro. Tente novamente.');
+      console.error('Erro ao registrar:', error);
+      let errorMessage = 'Não foi possível realizar o cadastro. Tente novamente.';
+      
+      if (error.response?.data?.message) {
+        if (Array.isArray(error.response.data.message)) {
+          errorMessage = error.response.data.message.join(', ');
+        } else {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -201,6 +264,41 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
               </View>
             </View>
 
+            {userType === 'PATIENT' && (
+              <>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Telefone *</Text>
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.icon}>📱</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="(11) 99999-9999"
+                      placeholderTextColor="#999"
+                      value={phone}
+                      onChangeText={setPhone}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Data de Nascimento *</Text>
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.icon}>📅</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="1990-01-01"
+                      placeholderTextColor="#999"
+                      value={birthDate}
+                      onChangeText={setBirthDate}
+                      keyboardType="default"
+                    />
+                  </View>
+                  <Text style={styles.helperText}>Formato: YYYY-MM-DD (ex: 1990-01-01)</Text>
+                </View>
+              </>
+            )}
+
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Cadastrar como:</Text>
               <View style={styles.roleSelector}>
@@ -280,6 +378,18 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Modal de Sucesso */}
+      <AlertModal
+        visible={successModal}
+        title="Sucesso! ✅"
+        message="Cadastro realizado! Verifique seu email para ativar a conta."
+        type="success"
+        onConfirm={() => {
+          setSuccessModal(false);
+          onSuccess(email);
+        }}
+      />
     </LinearGradient>
   );
 }
@@ -434,6 +544,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600',
+  },
+  helperText: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginTop: 4,
+    marginLeft: 40,
   },
 });
 

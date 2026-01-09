@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from './src/services/api/auth.service';
 import { isTokenValid } from './src/utils/token.util';
+import { ToastProvider } from './src/hooks/useToast';
 import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -12,8 +13,9 @@ import PasswordResetSuccessScreen from './src/screens/PasswordResetSuccessScreen
 import RegisterScreen from './src/screens/RegisterScreen';
 import EmailVerificationScreen from './src/screens/EmailVerificationScreen';
 import EmailVerificationSuccessScreen from './src/screens/EmailVerificationSuccessScreen';
+import CompletePatientProfileScreen from './src/screens/CompletePatientProfileScreen';
 
-type AuthScreen = 'login' | 'register' | 'emailVerification' | 'emailVerificationSuccess' | 'forgotPassword' | 'resetPassword' | 'resetSuccess';
+type AuthScreen = 'login' | 'register' | 'emailVerification' | 'emailVerificationSuccess' | 'forgotPassword' | 'resetPassword' | 'resetSuccess' | 'completePatientProfile';
 
 const TOKEN_KEY = '@telemedicina:token';
 const USER_DATA_KEY = '@telemedicina:userData';
@@ -50,9 +52,16 @@ export default function App() {
         if (storedToken && storedUserData) {
           // Validar se o token não está expirado
           if (isTokenValid(storedToken)) {
+            const parsedUserData = JSON.parse(storedUserData);
             setToken(storedToken);
-            setUserData(JSON.parse(storedUserData));
+            setUserData(parsedUserData);
             console.log('Token e dados do usuário recuperados do AsyncStorage');
+            
+            // Verificar se paciente precisa completar perfil
+            if (parsedUserData?.role === 'PATIENT' && parsedUserData?.hasCompleteProfile === false) {
+              console.log('Paciente sem perfil completo detectado no carregamento inicial');
+              setCurrentScreen('completePatientProfile');
+            }
           } else {
             // Token expirado, remover do storage
             console.log('Token expirado, removendo do storage');
@@ -100,6 +109,24 @@ export default function App() {
         return;
       }
       
+      // Verificar se o paciente tem perfil completo
+      const hasCompleteProfile = response.user?.hasCompleteProfile !== false;
+      
+      // Se for paciente e não tiver perfil completo, redirecionar para completar cadastro
+      if (userRole === 'PATIENT' && !hasCompleteProfile) {
+        console.log('Paciente sem perfil completo, redirecionando para completar cadastro');
+        // Salvar token temporariamente para usar na tela de completar cadastro
+        await AsyncStorage.multiSet([
+          [TOKEN_KEY, token],
+          [USER_DATA_KEY, JSON.stringify(response.user)],
+        ]);
+        setToken(token);
+        setUserData(response.user);
+        setCurrentScreen('completePatientProfile');
+        setLoading(false);
+        return;
+      }
+
       // Salvar token e dados do usuário no AsyncStorage
       await AsyncStorage.multiSet([
         [TOKEN_KEY, token],
@@ -180,15 +207,41 @@ export default function App() {
   };
 
   // --- ECRÃ DE LOGADO (HomeScreen com navegação por tabs) ---
-  if (token) {
+  // Verificar se precisa completar perfil antes de mostrar HomeScreen
+  if (token && currentScreen === 'completePatientProfile') {
+    return (
+      <ToastProvider>
+        <CompletePatientProfileScreen
+          token={token}
+          onComplete={() => {
+            // Após completar, atualizar userData e ir para HomeScreen
+            if (userData) {
+              const updatedUserData = { ...userData, hasCompleteProfile: true };
+              AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUserData));
+              setUserData(updatedUserData);
+            }
+            setCurrentScreen('login'); // Reset para forçar renderização do HomeScreen
+            // O useEffect vai detectar o token e renderizar HomeScreen
+          }}
+        />
+      </ToastProvider>
+    );
+  }
+
+  if (token && userData?.hasCompleteProfile !== false) {
     console.log('Token existe, renderizando HomeScreen. Token:', token.substring(0, 20) + '...');
-    return <HomeScreen token={token} onLogout={handleLogout} userRole={userData?.role} />;
+    return (
+      <ToastProvider>
+        <HomeScreen token={token} onLogout={handleLogout} userRole={userData?.role} />
+      </ToastProvider>
+    );
   }
   
   console.log('Sem token, renderizando tela de autenticação. currentScreen:', currentScreen);
 
   // --- TELAS DE AUTENTICAÇÃO ---
-  switch (currentScreen) {
+  const renderAuthScreen = () => {
+    switch (currentScreen) {
     case 'register':
       return (
         <RegisterScreen
@@ -243,5 +296,8 @@ export default function App() {
           loading={loading}
         />
       );
-  }
+    }
+  };
+
+  return <ToastProvider>{renderAuthScreen()}</ToastProvider>;
 }
