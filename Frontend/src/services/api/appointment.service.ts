@@ -202,6 +202,15 @@ export const appointmentService = {
           
           // Forçar exibição completa do response data
           const errorData = error.response.data;
+          
+          // PRIMEIRO: Tentar stringify imediatamente para garantir que aparece
+          try {
+            const errorDataStr = JSON.stringify(errorData);
+            console.log('[APPOINTMENT-SERVICE] ERROR_DATA_STRING:', errorDataStr);
+          } catch (e) {
+            console.log('[APPOINTMENT-SERVICE] Erro ao stringify errorData:', String(e));
+          }
+          
           console.log('[APPOINTMENT-SERVICE] ===== RESPONSE DATA COMPLETO =====');
           
           // Logar cada propriedade separadamente para garantir que aparece
