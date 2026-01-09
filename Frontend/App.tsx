@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from './src/services/api/auth.service';
+import { isTokenValid } from './src/utils/token.util';
 import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -16,6 +17,17 @@ type AuthScreen = 'login' | 'register' | 'emailVerification' | 'emailVerificatio
 
 const TOKEN_KEY = '@telemedicina:token';
 const USER_DATA_KEY = '@telemedicina:userData';
+
+// Variável global para callback de logout (usado pelo interceptor do axios)
+let globalLogoutCallback: (() => void) | null = null;
+
+export const setGlobalLogoutCallback = (callback: () => void) => {
+  globalLogoutCallback = callback;
+};
+
+export const getGlobalLogoutCallback = (): (() => void) | null => {
+  return globalLogoutCallback;
+};
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -36,9 +48,16 @@ export default function App() {
         ]);
 
         if (storedToken && storedUserData) {
-          setToken(storedToken);
-          setUserData(JSON.parse(storedUserData));
-          console.log('Token e dados do usuário recuperados do AsyncStorage');
+          // Validar se o token não está expirado
+          if (isTokenValid(storedToken)) {
+            setToken(storedToken);
+            setUserData(JSON.parse(storedUserData));
+            console.log('Token e dados do usuário recuperados do AsyncStorage');
+          } else {
+            // Token expirado, remover do storage
+            console.log('Token expirado, removendo do storage');
+            await AsyncStorage.multiRemove([TOKEN_KEY, USER_DATA_KEY]);
+          }
         }
       } catch (error) {
         console.error('Erro ao recuperar token do AsyncStorage:', error);
@@ -49,11 +68,6 @@ export default function App() {
 
     loadStoredAuth();
   }, []);
-
-  // Se ainda está mostrando splash ou carregando token, exibir splash screen
-  if (showSplash || isLoadingToken) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
 
   // Função para fazer Login
   const handleLogin = async (email: string, password: string, role: 'PATIENT' | 'PROFESSIONAL') => {
@@ -116,6 +130,19 @@ export default function App() {
     setUserData(null);
     setCurrentScreen('login');
   };
+
+  // Configurar callback de logout global para uso no interceptor do axios
+  useEffect(() => {
+    setGlobalLogoutCallback(handleLogout);
+    return () => {
+      setGlobalLogoutCallback(null);
+    };
+  }, []);
+
+  // Se ainda está mostrando splash ou carregando token, exibir splash screen
+  if (showSplash || isLoadingToken) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   // Navegação entre telas de autenticação
   const handleForgotPassword = () => {

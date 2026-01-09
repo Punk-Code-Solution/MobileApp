@@ -5,6 +5,11 @@
 
 import axios from 'axios';
 import { API_BASE_URL } from './api.config';
+import { getGlobalLogoutCallback } from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const TOKEN_KEY = '@telemedicina:token';
+const USER_DATA_KEY = '@telemedicina:userData';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -28,9 +33,36 @@ api.interceptors.request.use(
 // Interceptor para tratamento de erros
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response) {
       // Erro com resposta do servidor
+      const statusCode = error.response.status;
+      
+      // Se for erro 401 (não autorizado), token provavelmente expirou
+      if (statusCode === 401) {
+        console.log('Token expirado ou inválido (401), fazendo logout automático');
+        
+        // Remover token do storage
+        try {
+          await AsyncStorage.multiRemove([TOKEN_KEY, USER_DATA_KEY]);
+        } catch (storageError) {
+          console.error('Erro ao remover token do storage:', storageError);
+        }
+        
+        // Chamar callback de logout se disponível
+        const logoutCallback = getGlobalLogoutCallback();
+        if (logoutCallback) {
+          // Usar setTimeout para evitar problemas de sincronização
+          setTimeout(() => {
+            try {
+              logoutCallback();
+            } catch (callbackError) {
+              console.error('Erro ao chamar callback de logout:', callbackError);
+            }
+          }, 100);
+        }
+      }
+      
       return Promise.reject(error);
     } else if (error.request) {
       // Erro de rede - fornecer mais detalhes para debug

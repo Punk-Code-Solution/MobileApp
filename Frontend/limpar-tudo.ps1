@@ -14,8 +14,7 @@ Start-Sleep -Seconds 2
 # 2. Limpar bundles antigos
 Write-Host "2. Removendo bundles antigos..." -ForegroundColor Yellow
 $bundlePaths = @(
-    "android\app\src\main\assets\index.android.bundle",
-    "android\android\app\src\main\assets\index.android.bundle"
+    "android\app\src\main\assets\index.android.bundle"
 )
 
 foreach ($path in $bundlePaths) {

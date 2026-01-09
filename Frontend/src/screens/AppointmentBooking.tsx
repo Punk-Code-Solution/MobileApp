@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { Professional, CreateAppointmentDto } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
+import { isTokenValid } from '../utils/token.util';
 
 interface AppointmentBookingProps {
   professional: Professional;
@@ -138,6 +140,20 @@ export default function AppointmentBooking({
       return;
     }
 
+    // Validar token antes de fazer a requisição
+    if (!token || !isTokenValid(token)) {
+      try {
+        Alert.alert(
+          'Sessão Expirada',
+          'Sua sessão expirou. Por favor, faça login novamente.',
+          [{ text: 'OK' }]
+        );
+      } catch (error) {
+        console.error('Erro ao exibir alert de token expirado:', error);
+      }
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -209,58 +225,79 @@ export default function AppointmentBooking({
         setLoading(false);
       }
       
-      // Usar requestAnimationFrame para garantir que o estado seja atualizado
-      requestAnimationFrame(() => {
+      // Usar setTimeout para garantir que o estado seja atualizado (mais compatível com Android)
+      setTimeout(() => {
         if (!isMountedRef.current) return;
         
         try {
           // Validar valores antes de usar no Alert
           const message = `Consulta agendada com ${savedProfessionalName || 'o profissional'} para ${formatDate(savedDate)} às ${savedTime || 'horário selecionado'}`;
           
-          Alert.alert(
-            'Sucesso! ✅',
-            message,
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  // Usar um pequeno delay para garantir que o Alert foi completamente fechado
-                  setTimeout(() => {
-                    if (isMountedRef.current && onSuccess) {
-                      try {
-                        onSuccess();
-                      } catch (error) {
-                        console.error('Erro ao chamar onSuccess:', error);
-                        // Tentar navegar de volta mesmo com erro
-                        if (isMountedRef.current) {
+          // No Android, usar um delay maior antes de mostrar o Alert para evitar crashes
+          const alertDelay = Platform.OS === 'android' ? 500 : 100;
+          
+          setTimeout(() => {
+            if (!isMountedRef.current) return;
+            
+            try {
+              Alert.alert(
+                'Sucesso! ✅',
+                message,
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Usar um pequeno delay para garantir que o Alert foi completamente fechado
+                      setTimeout(() => {
+                        if (isMountedRef.current && onSuccess) {
                           try {
                             onSuccess();
-                          } catch (retryError) {
-                            console.error('Erro ao tentar novamente onSuccess:', retryError);
+                          } catch (error) {
+                            console.error('Erro ao chamar onSuccess:', error);
+                            // Tentar navegar de volta mesmo com erro
+                            if (isMountedRef.current) {
+                              try {
+                                onSuccess();
+                              } catch (retryError) {
+                                console.error('Erro ao tentar novamente onSuccess:', retryError);
+                              }
+                            }
                           }
                         }
-                      }
-                    }
-                  }, 300); // Aumentado para 300ms para garantir
-                },
-              },
-            ],
-            { cancelable: false }
-          );
-        } catch (alertError) {
-          console.error('Erro crítico ao exibir Alert de sucesso:', alertError);
-          // Tentar chamar onSuccess mesmo sem mostrar o alert
+                      }, Platform.OS === 'android' ? 500 : 300);
+                    },
+                  },
+                ],
+                { cancelable: false }
+              );
+            } catch (alertError) {
+              console.error('Erro crítico ao exibir Alert de sucesso:', alertError);
+              // Tentar chamar onSuccess mesmo sem mostrar o alert
+              setTimeout(() => {
+                if (isMountedRef.current && onSuccess) {
+                  try {
+                    onSuccess();
+                  } catch (error) {
+                    console.error('Erro ao chamar onSuccess após erro no Alert:', error);
+                  }
+                }
+              }, 100);
+            }
+          }, alertDelay);
+        } catch (error) {
+          console.error('Erro ao preparar Alert de sucesso:', error);
+          // Tentar chamar onSuccess mesmo com erro
           setTimeout(() => {
             if (isMountedRef.current && onSuccess) {
               try {
                 onSuccess();
-              } catch (error) {
-                console.error('Erro ao chamar onSuccess após erro no Alert:', error);
+              } catch (callbackError) {
+                console.error('Erro ao chamar onSuccess após erro:', callbackError);
               }
             }
           }, 100);
         }
-      });
+      }, Platform.OS === 'android' ? 200 : 100);
     } catch (error: any) {
       // Logs protegidos contra erros de serialização
       try {
@@ -327,7 +364,12 @@ export default function AppointmentBooking({
             errorMessage = 'Dados inválidos. Verifique a data e horário selecionados.';
           }
         } else if (statusCode === 401) {
-          errorMessage = 'Sessão expirada. Por favor, faça login novamente.';
+          // Não mostrar alert para 401, o interceptor do axios já vai fazer logout
+          // Apenas garantir que o loading seja resetado
+          if (isMountedRef.current) {
+            setLoading(false);
+          }
+          return; // Sair sem mostrar alert, o logout automático vai tratar
         } else if (statusCode === 403) {
           errorMessage = 'Você não tem permissão para realizar esta ação.';
         } else if (statusCode === 404) {
@@ -343,15 +385,29 @@ export default function AppointmentBooking({
       }
       
       if (isMountedRef.current) {
-        try {
-          Alert.alert('Erro ao Agendar', errorMessage);
-        } catch (alertError) {
-          console.error('Erro crítico ao exibir alert:', alertError);
-        }
+        // No Android, usar um pequeno delay antes de mostrar o Alert para evitar crashes
+        const alertDelay = Platform.OS === 'android' ? 300 : 0;
+        
+        setTimeout(() => {
+          if (!isMountedRef.current) return;
+          
+          try {
+            Alert.alert('Erro ao Agendar', errorMessage);
+          } catch (alertError) {
+            console.error('Erro crítico ao exibir alert:', alertError);
+          }
+          try {
+            setLoading(false);
+          } catch (stateError) {
+            console.error('Erro ao atualizar estado loading:', stateError);
+          }
+        }, alertDelay);
+      } else {
+        // Se o componente foi desmontado, apenas resetar loading se possível
         try {
           setLoading(false);
         } catch (stateError) {
-          console.error('Erro ao atualizar estado loading:', stateError);
+          // Ignorar erro se componente foi desmontado
         }
       }
     }
