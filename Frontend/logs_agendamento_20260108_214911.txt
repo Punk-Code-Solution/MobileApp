@@ -1,0 +1,67 @@
+01-08 21:49:38.020 I/ReactNativeJS( 7119): [APPOINTMENT] ===== IN+ìCIO DO PROCESSO DE AGENDAMENTO =====
+01-08 21:49:38.020 I/ReactNativeJS( 7119): '[APPOINTMENT] Timestamp:', '2026-01-09T00:49:38.020Z'
+01-08 21:49:38.020 I/ReactNativeJS( 7119): '[APPOINTMENT] Professional ID:', '00000000-0000-0000-0000-000000000100'
+01-08 21:49:38.020 I/ReactNativeJS( 7119): '[APPOINTMENT] Professional Name:', 'Dr. Jo+úo Silva'
+01-08 21:49:38.020 I/ReactNativeJS( 7119): '[APPOINTMENT] Selected Date:', '2026-01-10T03:00:00.000Z'
+01-08 21:49:38.020 I/ReactNativeJS( 7119): '[APPOINTMENT] Selected Time:', '10:00'
+01-08 21:49:38.020 I/ReactNativeJS( 7119): '[APPOINTMENT] Loading state:', false
+01-08 21:49:38.020 I/ReactNativeJS( 7119): '[APPOINTMENT] Component mounted:', true
+01-08 21:49:38.020 I/ReactNativeJS( 7119): [APPOINTMENT] ­ƒôà Validando data e hor+írio...
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT] Data/hora do agendamento:', '2026-01-10T13:00:00.000Z'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT] Data/hora m+¡nima permitida:', '2026-01-09T02:49:38.021Z'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT] Diferen+ºa em horas:', 36.17277194444444
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] ­ƒöì Validando professionalId...
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT] Ô£à ProfessionalId v+ílido:', '00000000-0000-0000-0000-000000000100'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] ­ƒöÉ Validando token...
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] Ô£à Todas as valida+º+Áes passaram, iniciando requisi+º+úo...
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] ­ƒöä Preparando dados para envio...
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT] Validando formato UUID do professionalId:', '00000000-0000-0000-0000-000000000100'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] Ô£à Formato UUID v+ílido
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT] Data formatada para ISO 8601:', '2026-01-10T13:00:00.000Z'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] Ô£à Formato ISO 8601 v+ílido
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] ­ƒôñ Dados preparados para envio:
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT]   - professionalId:', '00000000-0000-0000-0000-000000000100'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT]   - scheduledAt:', '2026-01-10T13:00:00.000Z'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT] ­ƒÜÇ Chamando appointmentService.createAppointment...
+01-08 21:49:38.021 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] ===== IN+ìCIO createAppointment =====
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Timestamp:', '2026-01-09T00:49:38.021Z'
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Token presente:', true
+01-08 21:49:38.021 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Token length:', 251
+01-08 21:49:38.022 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Data recebida:', { professionalId: '00000000-0000-0000-0000-000000000100',
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] ­ƒöì Validando dados de entrada...
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] Ô£à Dados b+ísicos v+ílidos
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] ­ƒöì Validando formato UUID...
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] Ô£à Formato UUID v+ílido
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] ­ƒöì Validando formato ISO 8601...
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] Ô£à Formato ISO 8601 v+ílido
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] ­ƒöì Validando token...
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] ­ƒöì Verificando expira+º+úo do token...
+01-08 21:49:38.022 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] Ô£à Token v+ílido e n+úo expirado
+01-08 21:49:38.022 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] ­ƒôñ Enviando requisi+º+úo POST para:', '/appointments'
+01-08 21:49:38.022 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Payload:', '{\n  "professionalId": "00000000-0000-0000-0000-000000000100",\n  "scheduledAt": "2026-01-10T13:00:00.000Z"\n}'
+01-08 21:49:38.022 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Headers:', { Authorization: 'Bearer eyJhbGciOiJIUzI1NiIs...',
+01-08 21:49:38.307 I/ReactNativeJS( 7119): [APPOINTMENT-SERVICE] ÔØî ===== ERRO em createAppointment =====
+01-08 21:49:38.308 E/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Erro capturado:', [AxiosError: Request failed with status code 400]
+01-08 21:49:38.310 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Tipo do erro:', 'object'
+01-08 21:49:38.310 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Mensagem:', 'Request failed with status code 400'
+01-08 21:49:38.310 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Status code:', 400
+01-08 21:49:38.311 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Response data:', { statusCode: 400,
+01-08 21:49:38.312 I/ReactNativeJS( 7119): '[APPOINTMENT-SERVICE] Response headers:', { 'access-control-allow-credentials': 'true',
+01-08 21:49:38.312 I/ReactNativeJS( 7119): [APPOINTMENT] ÔØî Erro na requisi+º+úo ao servi+ºo
+01-08 21:49:38.312 I/ReactNativeJS( 7119): '[APPOINTMENT] Tipo do erro:', 'object'
+01-08 21:49:38.312 I/ReactNativeJS( 7119): '[APPOINTMENT] Mensagem do erro:', 'Request failed with status code 400'
+01-08 21:49:38.312 I/ReactNativeJS( 7119): '[APPOINTMENT] Status code:', 400
+01-08 21:49:38.312 I/ReactNativeJS( 7119): [APPOINTMENT] ÔØî ===== ERRO NO PROCESSO DE AGENDAMENTO =====
+01-08 21:49:38.313 I/ReactNativeJS( 7119): '[APPOINTMENT] Timestamp do erro:', '2026-01-09T00:49:38.312Z'
+01-08 21:49:38.313 E/ReactNativeJS( 7119): '[APPOINTMENT] Erro capturado:', [AxiosError: Request failed with status code 400]
+01-08 21:49:38.314 I/ReactNativeJS( 7119): '[APPOINTMENT] Tipo do erro:', 'object'
+01-08 21:49:38.314 I/ReactNativeJS( 7119): '[APPOINTMENT] Nome do erro:', 'AxiosError'
+01-08 21:49:38.314 I/ReactNativeJS( 7119): '[APPOINTMENT] Mensagem do erro:', 'Request failed with status code 400'
+01-08 21:49:38.314 I/ReactNativeJS( 7119): '[APPOINTMENT] Stack trace:', 'AxiosError: Request failed with status code 400\n    at settle (address at index.android.bundle:1:774924)\n    at onloadend (address at index.android.bundle:1:789383)\n    at invoke (address at index.android.bundle:1:280563)\n    at dispatch (address at index.android.bundle:1:279917)\n    at value (address at index.android.bundle:1:282121)\n    at dispatchTrustedEvent (address at index.android.bundle:1:282305)\n    at setReadyState (address at index.android.bundle:1:275700)\n    at __didCompleteResponse (address at index.android.bundle:1:273045)\n    at apply (native)\n    at anonymous (address at index.android.bundle:1:275020)\n    at apply (native)\n    at emit (address at index.android.bundle:1:37856)\n    at apply (native)\n    at anonymous (address at index.android.bundle:1:35188)\n    at emit (address at index.android.bundle:1:35522)\n    at ?anon_0_ (address at index.android.bundle:1:797719)\n    at throw (native)\n    at asyncGeneratorStep (address at index.android.bundle:1:593279)\n    at _throw (address at index.android.bundle:1:593583)\n    at tryCallOne (address at InternalBytecode.js:1:1180)\n    at anonymous (address at InternalBytecode.js:1:1874)'
+01-08 21:49:38.315 I/ReactNativeJS( 7119): '[APPOINTMENT] Erro completo (JSON):', '{\n  "stack": "AxiosError: Request failed with status code 400\\n    at settle (address at index.android.bundle:1:774924)\\n    at onloadend (address at index.android.bundle:1:789383)\\n    at invoke (address at index.android.bundle:1:280563)\\n    at dispatch (address at index.android.bundle:1:279917)\\n    at value (address at index.android.bundle:1:282121)\\n    at dispatchTrustedEvent (address at index.android.bundle:1:282305)\\n    at setReadyState (address at index.android.bundle:1:275700)\\n    at __didCompleteResponse (address at index.android.bundle:1:273045)\\n    at apply (native)\\n    at anonymous (address at index.android.bundle:1:275020)\\n    at apply (native)\\n    at emit (address at index.android.bundle:1:37856)\\n    at apply (native)\\n    at anonymous (address at index.android.bundle:1:35188)\\n    at emit (address at index.android.bundle:1:35522)\\n    at ?anon_0_ (address at index.android.bundle:1:797719)\\n    at throw (native)\\n    at asyncGeneratorStep (address at index.android.bundle:1:593279)\\n    at _throw (address at index.android.bundle:1:593583)\\n    at tryCallOne (address at InternalBytecode.js:1:1180)\\n    at anonymous (address at InternalBytecode.js:1:1874)",\n  "message": "Request failed with status code 400",\n  "name": "AxiosError",\n  "code": "ERR_BAD_REQUEST",\n  "config": {},\n  "status": 400\n}'
+01-08 21:49:38.315 I/ReactNativeJS( 7119): '[APPOINTMENT] Status code:', 400
+01-08 21:49:38.315 I/ReactNativeJS( 7119): '[APPOINTMENT] Status text:', undefined
+01-08 21:49:38.315 I/ReactNativeJS( 7119): '[APPOINTMENT] Response data:', { statusCode: 400,
+01-08 21:49:38.317 I/ReactNativeJS( 7119): '[APPOINTMENT] Response headers:', { 'access-control-allow-credentials': 'true',
+01-08 21:49:38.317 E/unknown:ReactNative( 7119): console.error: [APPOINTMENT-SERVICE] Erro capturado: AxiosError: Request failed with status code 400, stack:
+01-08 21:49:38.320 E/unknown:ReactNative( 7119): console.error: [APPOINTMENT] Erro capturado: AxiosError: Request failed with status code 400, stack:

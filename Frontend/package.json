@@ -21,7 +21,8 @@
     "ios:build:production": "powershell -ExecutionPolicy Bypass -File .\\build-ios-production.ps1",
     "ios:build:production:no-bundle": "powershell -ExecutionPolicy Bypass -File .\\build-ios-production.ps1 -SkipBundle",
     "ios:bundle": "powershell -ExecutionPolicy Bypass -File .\\build-ios-production.ps1 -BundleOnly",
-    "clean:all": "powershell -ExecutionPolicy Bypass -File .\\limpar-tudo.ps1"
+    "clean:all": "powershell -ExecutionPolicy Bypass -File .\\limpar-tudo.ps1",
+    "logs:appointment": "powershell -ExecutionPolicy Bypass -File .\\ver-logs.ps1"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",

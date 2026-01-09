@@ -15,6 +15,14 @@ import { Platform } from 'react-native';
 //
 // PRODUÇÃO:
 // - Backend na Vercel: https://mobile-app-xi-five.vercel.app
+// 
+// IMPORTANTE: A URL de produção é usada automaticamente quando:
+// - O bundle é gerado com --dev false (build de produção)
+// - __DEV__ é false (modo produção do React Native)
+// 
+// Para verificar se está usando a URL correta em produção:
+// - O bundle gerado deve conter: 'https://mobile-app-xi-five.vercel.app'
+// - Verifique o bundle em: android/app/src/main/assets/index.android.bundle
 
 const getApiBaseUrl = (): string => {
   // Se estiver em desenvolvimento
