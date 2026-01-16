@@ -11,9 +11,12 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import ChatScreen from './ChatScreen';
 import { messageService } from '../services/api/message.service';
+
+const USER_DATA_KEY = '@telemedicina:userData';
 
 interface Conversation {
   id: string;
@@ -46,6 +49,29 @@ export default function MessagesScreen({ token, initialConversation, onConversat
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [userName, setUserName] = useState<string>('Usuário');
+
+  // Buscar nome do usuário do AsyncStorage
+  useEffect(() => {
+    const loadUserName = async () => {
+      try {
+        const userDataString = await AsyncStorage.getItem(USER_DATA_KEY);
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          // Tentar obter o nome de diferentes formas
+          const name = userData?.fullName || 
+                      userData?.patient?.fullName || 
+                      userData?.professional?.fullName || 
+                      userData?.name ||
+                      'Usuário';
+          setUserName(name);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar nome do usuário:', error);
+      }
+    };
+    loadUserName();
+  }, []);
 
   useEffect(() => {
     fetchConversations();
@@ -272,7 +298,7 @@ export default function MessagesScreen({ token, initialConversation, onConversat
         <View style={styles.headerTop}>
           <View style={styles.headerTextContainer}>
             <Text style={styles.title}>Mensagens</Text>
-            <Text style={styles.greeting}>Olá, Usuário!</Text>
+            <Text style={styles.greeting}>Olá, {userName}!</Text>
             <Text style={styles.subtitle}>Seu histórico de mensagens</Text>
           </View>
           <TouchableOpacity 

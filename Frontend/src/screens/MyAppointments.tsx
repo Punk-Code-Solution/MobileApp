@@ -12,12 +12,15 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
 import RateAppointmentScreen from './RateAppointmentScreen';
 import { appointmentService } from '../services/api/appointment.service';
+
+const USER_DATA_KEY = '@telemedicina:userData';
 
 interface MyAppointmentsProps {
   token: string;
@@ -57,6 +60,29 @@ export default function MyAppointments({ token, userRole, onBack, onNavigateToCh
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [hasAppointments, setHasAppointments] = useState(false);
   const [screenState, setScreenState] = useState<ScreenState>('list');
+  const [userName, setUserName] = useState<string>('Usuário');
+
+  // Buscar nome do usuário do AsyncStorage
+  useEffect(() => {
+    const loadUserName = async () => {
+      try {
+        const userDataString = await AsyncStorage.getItem(USER_DATA_KEY);
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          // Tentar obter o nome de diferentes formas
+          const name = userData?.fullName || 
+                      userData?.patient?.fullName || 
+                      userData?.professional?.fullName || 
+                      userData?.name ||
+                      'Usuário';
+          setUserName(name);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar nome do usuário:', error);
+      }
+    };
+    loadUserName();
+  }, []);
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -243,8 +269,12 @@ export default function MyAppointments({ token, userRole, onBack, onNavigateToCh
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.greeting}>Olá, Usuário!</Text>
-            <Text style={styles.subtitle}>Verifique aqui suas consultas</Text>
+            <Text style={styles.greeting}>Olá, {userName}!</Text>
+            <Text style={styles.subtitle}>
+              {userRole === 'PROFESSIONAL' 
+                ? 'Gerencie suas consultas e pacientes' 
+                : 'Verifique aqui suas consultas'}
+            </Text>
           </View>
           <TouchableOpacity 
             style={styles.notificationButton} 

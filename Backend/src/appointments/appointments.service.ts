@@ -82,14 +82,37 @@ export class AppointmentsService {
       const appointmentEnd = new Date(appointmentDate);
       appointmentEnd.setMinutes(appointmentEnd.getMinutes() + 30);
 
-      // 4.2. Verificar "double booking" dentro da transação
+      // 4.2. Verificar se o paciente já tem um agendamento no mesmo horário (prevenir duplicatas)
+      // Agendamentos CANCELED e COMPLETED não contam como duplicatas
+      const duplicateAppointment = await tx.appointment.findFirst({
+        where: {
+          patientId: patient.id,
+          professionalId,
+          status: {
+            notIn: ['CANCELED', 'COMPLETED'], // Agendamentos cancelados e finalizados não contam
+          },
+          scheduledAt: {
+            gte: new Date(appointmentStart.getTime() - 5 * 60 * 1000), // 5min antes
+            lte: new Date(appointmentEnd.getTime() + 5 * 60 * 1000), // 5min depois
+          },
+        },
+      });
+
+      if (duplicateAppointment) {
+        throw new BadRequestException(
+          'Você já possui um agendamento neste horário. Verifique seus agendamentos.',
+        );
+      }
+
+      // 4.3. Verificar "double booking" dentro da transação
       // Buscar todos os appointments do profissional no intervalo de tempo
       // (considerando que cada consulta tem 30 minutos)
+      // Agendamentos CANCELED e COMPLETED liberam o horário para novos agendamentos
       const conflictingAppointments = await tx.appointment.findMany({
         where: {
           professionalId,
           status: {
-            not: 'CANCELED', // Agendamentos cancelados não contam como conflito
+            notIn: ['CANCELED', 'COMPLETED'], // Agendamentos cancelados e finalizados liberam o horário
           },
           scheduledAt: {
             // Buscar appointments que podem sobrepor
@@ -117,7 +140,7 @@ export class AppointmentsService {
         }
       }
 
-      // 4.3. Criar o agendamento dentro da mesma transação
+      // 4.4. Criar o agendamento dentro da mesma transação
       return await tx.appointment.create({
         data: {
           patientId: patient.id,

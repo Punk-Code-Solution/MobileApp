@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import { Professional } from '../types/appointment.types';
 import ProfessionalDetailsScreen from './ProfessionalDetailsScreen';
@@ -20,6 +21,8 @@ import AppointmentBooking from './AppointmentBooking';
 import SearchScreen from './SearchScreen';
 import { professionalService } from '../services/api/professional.service';
 import { useFadeIn } from '../hooks/useAnimation';
+
+const USER_DATA_KEY = '@telemedicina:userData';
 
 interface NewHomeScreenProps {
   token: string;
@@ -37,7 +40,30 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userName, setUserName] = useState<string>('Usuário');
   const fadeOpacity = useFadeIn(400);
+
+  // Buscar nome do usuário do AsyncStorage
+  useEffect(() => {
+    const loadUserName = async () => {
+      try {
+        const userDataString = await AsyncStorage.getItem(USER_DATA_KEY);
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          // Tentar obter o nome de diferentes formas
+          const name = userData?.fullName || 
+                      userData?.patient?.fullName || 
+                      userData?.professional?.fullName || 
+                      userData?.name ||
+                      'Usuário';
+          setUserName(name);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar nome do usuário:', error);
+      }
+    };
+    loadUserName();
+  }, []);
 
   useEffect(() => {
     fetchDoctors();
@@ -179,7 +205,7 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.greeting}>Olá, Usuário!</Text>
+            <Text style={styles.greeting}>Olá, {userName}!</Text>
             <Text style={styles.subtitle}>Como podemos ajudar hoje?</Text>
           </View>
           <TouchableOpacity 
@@ -278,7 +304,11 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
             )}
 
             {!searchQuery.trim() && displayedDoctors.length > 0 && (
-              <TouchableOpacity style={styles.seeMoreButton} activeOpacity={0.7}>
+              <TouchableOpacity 
+                style={styles.seeMoreButton} 
+                activeOpacity={0.7}
+                onPress={handleSearchPress}
+              >
                 <Text style={styles.seeMoreText}>Ver mais</Text>
               </TouchableOpacity>
             )}

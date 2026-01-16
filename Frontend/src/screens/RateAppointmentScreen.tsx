@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -60,7 +60,14 @@ export default function RateAppointmentScreen({
 
   const MAX_COMMENT_LENGTH = 500;
 
+  const isSubmittingRef = useRef(false);
+
   const handleSubmit = async () => {
+    // Proteção contra múltiplos cliques
+    if (isSubmittingRef.current || loading) {
+      return;
+    }
+
     if (rating === 0) {
       showToast('Por favor, selecione uma avaliação.', 'warning');
       return;
@@ -71,7 +78,9 @@ export default function RateAppointmentScreen({
       return;
     }
 
+    isSubmittingRef.current = true;
     setLoading(true);
+    
     try {
       // Chamada à API para salvar avaliação
       await appointmentService.rateAppointment(token, appointment.id, {
@@ -89,6 +98,7 @@ export default function RateAppointmentScreen({
       showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 

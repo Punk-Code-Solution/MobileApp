@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Param, NotFoundException } from '@nestjs/common';
 import { ProfessionalsService } from './professionals.service';
 import { JwtAuthGuard } from '../common/guards';
 
@@ -11,5 +11,21 @@ export class ProfessionalsController {
   @Get()
   findAll() {
     return this.professionalsService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const professional = await this.professionalsService.findOne(id);
+    if (!professional) {
+      throw new NotFoundException('Profissional não encontrado');
+    }
+    return professional;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/reviews')
+  async getReviews(@Param('id') id: string) {
+    return this.professionalsService.getReviews(id);
   }
 }

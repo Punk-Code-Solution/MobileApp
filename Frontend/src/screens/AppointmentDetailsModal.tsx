@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -63,6 +63,10 @@ export default function AppointmentDetailsModal({
     message: '',
   });
   const { showToast } = useToast();
+  // Refs para prevenir múltiplos cliques simultâneos
+  const isCancelingRef = useRef(false);
+  const isCompletingRef = useRef(false);
+  const isSendingMessageRef = useRef(false);
   const doctorName = appointment.professional?.fullName || 'Médico';
   const specialtyName =
     appointment.professional?.specialties?.[0]?.specialty?.name || 'Especialista';
@@ -85,8 +89,15 @@ export default function AppointmentDetailsModal({
   };
 
   const confirmCancel = async () => {
+    // Proteção contra múltiplos cliques
+    if (isCancelingRef.current || loading) {
+      return;
+    }
+
     setCancelConfirmModal(false);
+    isCancelingRef.current = true;
     setLoading(true);
+    
     try {
       await appointmentService.cancelAppointment(token, appointment.id);
       setSuccessModal(true);
@@ -95,6 +106,7 @@ export default function AppointmentDetailsModal({
       if (!error.response) {
         showToast('Verifique sua conexão com a internet e tente novamente.', 'error');
         setLoading(false);
+        isCancelingRef.current = false;
         return;
       }
       const errorMessage =
@@ -102,13 +114,20 @@ export default function AppointmentDetailsModal({
       setErrorModal({ visible: true, message: errorMessage });
     } finally {
       setLoading(false);
+      isCancelingRef.current = false;
     }
   };
 
   const handleSendMessage = async () => {
+    // Proteção contra múltiplos cliques
+    if (isSendingMessageRef.current || loading) {
+      return;
+    }
+
+    isSendingMessageRef.current = true;
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      
       // Buscar ou criar conversa vinculada à consulta
       const conversation = await messageService.getOrCreateConversationByAppointment(
         token,
@@ -142,6 +161,7 @@ export default function AppointmentDetailsModal({
       }
     } finally {
       setLoading(false);
+      isSendingMessageRef.current = false;
     }
   };
 
@@ -163,8 +183,15 @@ export default function AppointmentDetailsModal({
   };
 
   const confirmComplete = async () => {
+    // Proteção contra múltiplos cliques
+    if (isCompletingRef.current || loading) {
+      return;
+    }
+
     setCompleteConfirmModal(false);
+    isCompletingRef.current = true;
     setLoading(true);
+    
     try {
       console.log('[APPOINTMENT-DETAILS] Finalizando consulta:', {
         appointmentId: appointment.id,
@@ -196,6 +223,7 @@ export default function AppointmentDetailsModal({
         }
         showToast(errorMessage, 'error');
         setLoading(false);
+        isCompletingRef.current = false;
         return;
       }
 
@@ -229,6 +257,7 @@ export default function AppointmentDetailsModal({
       setErrorModal({ visible: true, message: errorMessage });
     } finally {
       setLoading(false);
+      isCompletingRef.current = false;
     }
   };
 

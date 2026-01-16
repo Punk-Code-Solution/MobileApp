@@ -80,5 +80,70 @@ export const professionalService = {
     // O TransformInterceptor envolve a resposta em { data, statusCode }
     return response.data.data || response.data;
   },
+
+  /**
+   * Busca avaliações de um profissional
+   */
+  async getReviews(token: string, professionalId: string): Promise<Array<{
+    id: string;
+    rating: number;
+    comment: string | null;
+    createdAt: string;
+    patient: {
+      fullName: string;
+      avatarUrl: string | null;
+    };
+  }>> {
+    console.log('[PROFESSIONAL-SERVICE] Buscando avaliações:', {
+      professionalId,
+      tokenLength: token?.length,
+    });
+
+    if (!token || !isTokenValid(token)) {
+      console.error('[PROFESSIONAL-SERVICE] Token inválido ou expirado');
+      throw new Error('Token inválido ou expirado');
+    }
+
+    try {
+      const response = await api.get<{ data: any[]; statusCode: number }>(
+        `${API_ENDPOINTS.PROFESSIONALS}/${professionalId}/reviews`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log('[PROFESSIONAL-SERVICE] Resposta da API:', {
+        status: response.status,
+        hasData: !!response.data,
+        dataType: Array.isArray(response.data?.data) ? 'array' : typeof response.data?.data,
+        dataLength: Array.isArray(response.data?.data) ? response.data.data.length : 0,
+        rawData: response.data,
+      });
+
+      const reviews = response.data.data || response.data || [];
+      console.log('[PROFESSIONAL-SERVICE] Avaliações processadas:', {
+        count: reviews.length,
+        reviews: reviews.map((r: any) => ({
+          id: r.id,
+          rating: r.rating,
+          hasComment: !!r.comment,
+          commentLength: r.comment?.length || 0,
+          patientName: r.patient?.fullName,
+        })),
+      });
+
+      return reviews;
+    } catch (error: any) {
+      console.error('[PROFESSIONAL-SERVICE] Erro ao buscar avaliações:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        professionalId,
+      });
+      throw error;
+    }
+  },
 };
 

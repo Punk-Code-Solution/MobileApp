@@ -81,7 +81,8 @@ export default function AppointmentBooking({
   onSuccess,
   onCancel,
 }: AppointmentBookingProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  // Ref para prevenir múltiplos cliques simultâneos
+  const isSubmittingRef = useRef(false);const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [alertModal, setAlertModal] = useState<{
@@ -111,10 +112,13 @@ export default function AppointmentBooking({
   const priceFormatted = professional.price ? Number(professional.price).toFixed(2) : '0.00';
 
   const handleConfirm = async () => {
-    // Proteção contra múltiplos cliques
-    if (loading) {
+    // Proteção contra múltiplos cliques usando ref
+    if (loading || isSubmittingRef.current) {
       return;
     }
+
+    // Marcar como submetendo imediatamente
+    isSubmittingRef.current = true;
 
     if (!selectedDate || !selectedTime) {
       showToast('Por favor, selecione uma data e um horário', 'warning');
@@ -195,6 +199,7 @@ export default function AppointmentBooking({
         if (isMountedRef.current) {
           showToast('Resposta inválida do servidor. Tente novamente.', 'error');
           setLoading(false);
+          isSubmittingRef.current = false;
         }
         return;
       }
@@ -204,6 +209,7 @@ export default function AppointmentBooking({
         if (isMountedRef.current) {
           showToast('Erro interno. Tente novamente.', 'error');
           setLoading(false);
+          isSubmittingRef.current = false;
         }
         return;
       }
@@ -214,6 +220,7 @@ export default function AppointmentBooking({
       
       if (isMountedRef.current) {
         setLoading(false);
+        isSubmittingRef.current = false;
       }
       
       const initialDelay = Platform.OS === 'android' ? 200 : 100;
@@ -284,6 +291,7 @@ export default function AppointmentBooking({
       
       if (!isMountedRef.current) {
         console.log('[APPOINTMENT] ⚠️ Componente desmontado, não exibindo alert de erro');
+        isSubmittingRef.current = false;
         return;
       }
       
@@ -292,6 +300,7 @@ export default function AppointmentBooking({
         if (isMountedRef.current) {
           showToast('Verifique sua conexão com a internet e tente novamente.', 'error');
           setLoading(false);
+          isSubmittingRef.current = false;
         }
         return;
       }
@@ -329,6 +338,7 @@ export default function AppointmentBooking({
           // Apenas garantir que o loading seja resetado
           if (isMountedRef.current) {
             setLoading(false);
+            isSubmittingRef.current = false;
           }
           return; // Sair sem mostrar alert, o logout automático vai tratar
         } else if (statusCode === 403) {
@@ -356,11 +366,13 @@ export default function AppointmentBooking({
       
       if (isMountedRef.current) {
         setLoading(false);
+        isSubmittingRef.current = false;
         showToast(errorMessage, 'error');
       } else {
         // Se o componente foi desmontado, apenas resetar loading se possível
         try {
           setLoading(false);
+          isSubmittingRef.current = false;
         } catch (stateError) {
           // Ignorar erro se componente foi desmontado
         }
