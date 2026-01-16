@@ -12,15 +12,23 @@ export class AuthService {
   ) {}
 
   async signIn(email: string, pass: string) {
-    // 1. Busca o usuário com relacionamentos
-    const user = await this.usersService.findByEmailWithRelations(email);
+    // 1. Normalizar email para lowercase (evita problemas de case sensitivity)
+    const normalizedEmail = email.toLowerCase().trim();
     
-    // 2. Verifica se usuário existe e se a senha bate
+    // 2. Busca o usuário com relacionamentos
+    const user = await this.usersService.findByEmailWithRelations(normalizedEmail);
+    
+    // 3. Verifica se usuário existe e se a senha bate
     if (!user || !(await comparePassword(pass, user.passwordHash))) {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    // 3. Verificar se paciente tem perfil completo
+    // 4. Verificar se o usuário está ativo (CRÍTICO para produção)
+    if (!user.isActive) {
+      throw new UnauthorizedException('Sua conta foi desativada. Entre em contato com o suporte.');
+    }
+
+    // 5. Verificar se paciente tem perfil completo
     let hasCompleteProfile = true;
     if (user.role === 'PATIENT') {
       hasCompleteProfile = !!user.patient;
@@ -28,14 +36,14 @@ export class AuthService {
       hasCompleteProfile = !!user.professional;
     }
 
-    // 4. Monta o Payload do Token (o que vai dentro do JWT)
+    // 6. Monta o Payload do Token (o que vai dentro do JWT)
     const payload = { 
       sub: user.id, 
       email: user.email, 
       role: user.role 
     };
 
-    // 5. Retorna o Token assinado
+    // 7. Retorna o Token assinado
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: { // Opcional: retornar dados básicos do user junto

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -55,47 +56,54 @@ export default function ChatScreen({
   const [inputText, setInputText] = useState('');
   const [screenState, setScreenState] = useState<ScreenState>('chat');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   // Buscar mensagens quando o chat é aberto
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!conversation.id) return;
+  const fetchMessages = useCallback(async () => {
+    if (!conversation.id) return;
+    
+    try {
+      setLoading(true);
+      const messagesData = await messageService.getMessages(token, conversation.id);
       
-      try {
-        setLoading(true);
-        const messagesData = await messageService.getMessages(token, conversation.id);
-        
-        // O backend já retorna no formato correto: { id, text, senderId: 'user' | 'professional', timestamp, type }
-        // Apenas garantir que seja um array
-        const formattedMessages: Message[] = Array.isArray(messagesData) 
-          ? messagesData.map((msg: any) => ({
-              id: msg.id,
-              text: msg.text,
-              senderId: msg.senderId || 'professional', // 'user' ou 'professional'
-              timestamp: msg.timestamp || new Date().toLocaleTimeString('pt-BR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }),
-              type: (msg.type || 'text') as 'text' | 'image',
-            }))
-          : [];
-        
-        setMessages(formattedMessages);
-      } catch (error: any) {
-        // Se o endpoint não estiver disponível (404), apenas logar
-        if (error?.response?.status !== 404) {
-          console.error('Erro ao buscar mensagens:', error);
-        }
-        // Em caso de erro, manter array vazio
-        setMessages([]);
-      } finally {
-        setLoading(false);
+      // O backend já retorna no formato correto: { id, text, senderId: 'user' | 'professional', timestamp, type }
+      // Apenas garantir que seja um array
+      const formattedMessages: Message[] = Array.isArray(messagesData) 
+        ? messagesData.map((msg: any) => ({
+            id: msg.id,
+            text: msg.text,
+            senderId: msg.senderId || 'professional', // 'user' ou 'professional'
+            timestamp: msg.timestamp || new Date().toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+            type: (msg.type || 'text') as 'text' | 'image',
+          }))
+        : [];
+      
+      setMessages(formattedMessages);
+    } catch (error: any) {
+      // Se o endpoint não estiver disponível (404), apenas logar
+      if (error?.response?.status !== 404) {
+        console.error('Erro ao buscar mensagens:', error);
       }
-    };
-
-    fetchMessages();
+      // Em caso de erro, manter array vazio
+      setMessages([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [conversation.id, token]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchMessages();
+  }, [fetchMessages]);
 
   useEffect(() => {
     // Marcar mensagens como lidas quando o chat é aberto
@@ -289,6 +297,14 @@ export default function ChatScreen({
             ]}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[colors.primary]}
+                tintColor={colors.primary}
+              />
+            }
             ListEmptyComponent={
               <View style={styles.emptyMessagesContainer}>
                 <Text style={styles.emptyMessagesText}>Nenhuma mensagem ainda</Text>

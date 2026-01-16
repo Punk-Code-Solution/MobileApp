@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  HttpException,
   Patch,
   BadRequestException,
 } from '@nestjs/common';
@@ -36,18 +37,8 @@ export class AppointmentsController {
     return this.appointmentsService.findAll(user.userId, user.role);
   }
 
-  @Get(':id')
-  findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    // Prevenir conflito: se id for 'me', retornar erro
-    if (id === 'me') {
-      throw new BadRequestException('Invalid appointment ID. Use GET /appointments/me to list your appointments.');
-    }
-    return this.appointmentsService.findOne(id, user.userId, user.role);
-  }
-
+  // IMPORTANTE: Rotas específicas devem vir ANTES de rotas com parâmetros dinâmicos
+  // Caso contrário, a rota :id captura todas as requisições
   @Patch(':id/cancel')
   @HttpCode(HttpStatus.OK)
   cancel(
@@ -55,6 +46,40 @@ export class AppointmentsController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.appointmentsService.cancel(id, user.userId, user.role);
+  }
+
+  @Patch(':id/complete')
+  @HttpCode(HttpStatus.OK)
+  async complete(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    try {
+      // Validar formato do ID (UUID)
+      if (!id || typeof id !== 'string' || id.trim().length === 0) {
+        throw new BadRequestException('ID do agendamento inválido.');
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id.trim())) {
+        throw new BadRequestException('ID do agendamento deve ser um UUID válido.');
+      }
+
+      return await this.appointmentsService.complete(id.trim(), user.userId, user.role);
+    } catch (error) {
+      // Se já for uma exceção HTTP, re-lançar
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      // Logar erro inesperado
+      console.error('[APPOINTMENTS-CONTROLLER] Erro ao finalizar consulta:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        appointmentId: id,
+        userId: user.userId,
+      });
+      throw error;
+    }
   }
 
   @Post(':id/rate')
@@ -65,6 +90,19 @@ export class AppointmentsController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.appointmentsService.rate(id, rateAppointmentDto, user.userId, user.role);
+  }
+
+  // Rota genérica deve vir POR ÚLTIMO
+  @Get(':id')
+  findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    // Prevenir conflito: se id for 'me', retornar erro
+    if (id === 'me') {
+      throw new BadRequestException('Invalid appointment ID. Use GET /appointments/me to list your appointments.');
+    }
+    return this.appointmentsService.findOne(id, user.userId, user.role);
   }
 }
 

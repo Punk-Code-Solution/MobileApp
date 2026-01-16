@@ -73,6 +73,7 @@ export const API_ENDPOINTS = {
     BASE: '/appointments',
     ME: '/appointments/me',
     CANCEL: (id: string) => `/appointments/${id}/cancel`,
+    COMPLETE: (id: string) => `/appointments/${id}/complete`,
     RATE: (id: string) => `/appointments/${id}/rate`,
   },
   MESSAGES: {

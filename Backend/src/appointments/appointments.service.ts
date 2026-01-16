@@ -450,6 +450,148 @@ export class AppointmentsService {
     return canceledAppointment;
   }
 
+  async complete(id: string, userId: string, userRole: string) {
+    try {
+      // Validar parâmetros
+      if (!id || typeof id !== 'string' || id.trim().length === 0) {
+        throw new BadRequestException('ID do agendamento inválido.');
+      }
+
+      if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+        throw new BadRequestException('ID do usuário inválido.');
+      }
+
+      // Apenas profissionais podem finalizar consultas
+      if (userRole !== 'PROFESSIONAL') {
+        throw new ForbiddenException('Apenas profissionais podem finalizar consultas.');
+      }
+
+      const trimmedId = id.trim();
+      const trimmedUserId = userId.trim();
+
+      // Buscar o agendamento (sem include primeiro para verificar se existe)
+      const appointment = await this.prisma.appointment.findUnique({
+        where: { id: trimmedId },
+      });
+
+      if (!appointment) {
+        console.error(`[COMPLETE] Agendamento não encontrado. ID: ${trimmedId}, UserId: ${trimmedUserId}`);
+        // Tentar buscar todos os appointments do profissional para debug
+        const professional = await this.prisma.professional.findUnique({
+          where: { userId: trimmedUserId },
+          include: {
+            appointments: {
+              select: { id: true, status: true },
+              take: 5,
+            },
+          },
+        });
+        if (professional) {
+          console.error(`[COMPLETE] Appointments do profissional:`, professional.appointments);
+        }
+        throw new NotFoundException('Agendamento não encontrado.');
+      }
+
+      // Buscar o profissional para verificar permissão
+      const professional = await this.prisma.professional.findUnique({
+        where: { userId: trimmedUserId },
+      });
+
+      if (!professional) {
+        console.error(`[COMPLETE] Profissional não encontrado. UserId: ${trimmedUserId}`);
+        throw new ForbiddenException('Profissional não encontrado.');
+      }
+
+      // Verificar se o agendamento pertence ao profissional
+      if (appointment.professionalId !== professional.id) {
+        console.error(
+          `[COMPLETE] Permissão negada. Appointment.professionalId: ${appointment.professionalId}, Professional.id: ${professional.id}, AppointmentId: ${trimmedId}`,
+        );
+        throw new ForbiddenException(
+          'Você não tem permissão para finalizar este agendamento.',
+        );
+      }
+
+      // Verificar se já está finalizado ou cancelado
+      if (appointment.status === 'COMPLETED') {
+        throw new BadRequestException('Esta consulta já foi finalizada.');
+      }
+
+      if (appointment.status === 'CANCELED') {
+        throw new BadRequestException('Não é possível finalizar uma consulta cancelada.');
+      }
+
+      // Finalizar o agendamento
+      const completedAppointment = await this.prisma.appointment.update({
+        where: { id: trimmedId },
+      data: {
+        status: 'COMPLETED',
+      },
+      include: {
+        professional: {
+          select: {
+            id: true,
+            fullName: true,
+            userId: true,
+          },
+        },
+        patient: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            userId: true,
+          },
+        },
+      },
+    });
+
+    // Criar notificação para o paciente sobre a finalização
+    try {
+      const professionalName = completedAppointment.professional?.fullName || 'Profissional';
+      await this.prisma.notification.create({
+        data: {
+          userId: completedAppointment.patient.userId,
+          title: 'Consulta Finalizada',
+          message: `Sua consulta com ${professionalName} foi finalizada. Você pode avaliar o atendimento.`,
+          type: 'APPOINTMENT',
+          appointmentId: completedAppointment.id,
+          read: false,
+        },
+      });
+    } catch (error) {
+      console.error('Erro ao criar notificação de finalização:', error);
+      // Não propagar erro de notificação - a consulta já foi finalizada
+    }
+
+      // Retornar apenas os dados essenciais para otimizar a resposta
+      return {
+        id: completedAppointment.id,
+        status: completedAppointment.status,
+        scheduledAt: completedAppointment.scheduledAt,
+        professional: completedAppointment.professional,
+        patient: completedAppointment.patient,
+      };
+    } catch (error) {
+      // Se já for uma exceção HTTP, re-lançar
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      // Logar erro inesperado
+      console.error('[APPOINTMENTS-SERVICE] Erro inesperado ao finalizar consulta:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        appointmentId: id,
+        userId,
+      });
+      throw error;
+    }
+  }
+
   async rate(
     appointmentId: string,
     rateAppointmentDto: RateAppointmentDto,

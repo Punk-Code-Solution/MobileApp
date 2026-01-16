@@ -95,6 +95,7 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
       {activeTab === 'appointments' && (
         <MyAppointments 
           token={token} 
+          userRole={userRole}
           onNavigateToChat={handleNavigateToChat}
           onShowNotifications={handleShowNotifications}
           unreadNotificationsCount={unreadCounts.notifications}

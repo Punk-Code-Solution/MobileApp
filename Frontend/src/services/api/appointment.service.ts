@@ -120,6 +120,61 @@ export const appointmentService = {
   },
 
   /**
+   * Finaliza um agendamento (apenas para profissionais)
+   */
+  async completeAppointment(token: string, appointmentId: string): Promise<void> {
+    try {
+      console.log('[APPOINTMENT-SERVICE] Finalizando agendamento:', {
+        appointmentId,
+        tokenLength: token?.length,
+      });
+
+      if (!token || typeof token !== 'string' || !isTokenValid(token)) {
+        throw new Error('Token expirado. Por favor, faça login novamente.');
+      }
+
+      if (!appointmentId || typeof appointmentId !== 'string') {
+        console.error('[APPOINTMENT-SERVICE] ID do agendamento inválido:', appointmentId);
+        throw new Error('ID do agendamento inválido.');
+      }
+
+      const response = await api.patch<{ data: any; statusCode: number }>(
+        API_ENDPOINTS.APPOINTMENTS.COMPLETE(appointmentId),
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000, // 30 segundos de timeout
+        }
+      );
+
+      // Verificar se a resposta foi bem-sucedida
+      if (response.status >= 200 && response.status < 300) {
+        // Invalidar cache após finalizar
+        try {
+          await removeCache(CACHE_KEYS.APPOINTMENTS);
+        } catch (cacheError) {
+          // Não propagar erro de cache
+          console.warn('[APPOINTMENT-SERVICE] Erro ao invalidar cache:', cacheError);
+        }
+        return;
+      }
+
+      throw new Error(`Erro ao finalizar consulta. Status: ${response.status}`);
+    } catch (error: any) {
+      console.error('[APPOINTMENT-SERVICE] Erro ao finalizar agendamento:', {
+        message: error?.message || error,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        appointmentId,
+      });
+      throw error;
+    }
+  },
+
+  /**
    * Avalia um agendamento
    */
   async rateAppointment(
@@ -136,8 +191,9 @@ export const appointmentService = {
         },
       }
     );
-    // Invalidar cache após avaliar
+    // Invalidar cache após avaliar (appointments e professionals, pois o rating afeta a média do profissional)
     await removeCache(CACHE_KEYS.APPOINTMENTS);
+    await removeCache(CACHE_KEYS.PROFESSIONALS);
     // O TransformInterceptor envolve a resposta em { data, statusCode }
     // Usar fallback para garantir compatibilidade
     return response.data.data || response.data;

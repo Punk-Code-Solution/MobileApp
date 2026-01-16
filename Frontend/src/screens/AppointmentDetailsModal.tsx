@@ -13,15 +13,16 @@ import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
 import { messageService } from '../services/api/message.service';
-import RateAppointmentScreen from './RateAppointmentScreen';
 import { useToast } from '../hooks/useToast';
 import AlertModal from '../components/AlertModal';
 
 interface AppointmentDetailsModalProps {
   appointment: Appointment;
   token: string;
+  userRole?: 'PATIENT' | 'PROFESSIONAL';
   onClose: () => void;
   onCancelSuccess?: () => void;
+  onRateAppointment?: (appointment: Appointment) => void;
   onSendMessage?: (conversationId: string, professionalId: string, professionalName: string, professionalAvatar?: string) => void;
   hideSendMessage?: boolean; // Prop para ocultar o botão de enviar mensagem (usado no histórico)
 }
@@ -43,19 +44,19 @@ const formatTime = (dateString: string): string => {
   return `${hours}:${minutes}`;
 };
 
-type ModalState = 'details' | 'rate';
-
 export default function AppointmentDetailsModal({
   appointment,
   token,
+  userRole,
   onClose,
   onCancelSuccess,
+  onRateAppointment,
   onSendMessage,
   hideSendMessage = false,
 }: AppointmentDetailsModalProps) {
   const [loading, setLoading] = useState(false);
-  const [modalState, setModalState] = useState<ModalState>('details');
   const [cancelConfirmModal, setCancelConfirmModal] = useState(false);
+  const [completeConfirmModal, setCompleteConfirmModal] = useState(false);
   const [successModal, setSuccessModal] = useState(false);
   const [errorModal, setErrorModal] = useState<{ visible: boolean; message: string }>({
     visible: false,
@@ -67,10 +68,17 @@ export default function AppointmentDetailsModal({
     appointment.professional?.specialties?.[0]?.specialty?.name || 'Especialista';
   const isCompleted = appointment.status === 'COMPLETED';
   const isCanceled = appointment.status === 'CANCELED';
+  const isInProgress = appointment.status === 'IN_PROGRESS';
+  const isScheduled = appointment.status === 'SCHEDULED' || appointment.status === 'PENDING_PAYMENT';
   const canCancel =
     appointment.status !== 'CANCELED' &&
     appointment.status !== 'COMPLETED' &&
     appointment.status !== 'IN_PROGRESS';
+  const canComplete = 
+    userRole === 'PROFESSIONAL' && 
+    (isScheduled || isInProgress) && 
+    !isCompleted && 
+    !isCanceled;
 
   const handleCancel = () => {
     setCancelConfirmModal(true);
@@ -138,31 +146,91 @@ export default function AppointmentDetailsModal({
   };
 
   const handleRate = () => {
-    setModalState('rate');
-  };
-
-  const handleBackFromRate = () => {
-    setModalState('details');
-  };
-
-  const handleRateSuccess = () => {
-    setModalState('details');
-    if (onCancelSuccess) {
-      onCancelSuccess();
+    if (onRateAppointment) {
+      // Primeiro definir o estado da tela de avaliação
+      onRateAppointment(appointment);
+      // Depois fechar o modal (usar setTimeout para garantir que o estado seja atualizado)
+      setTimeout(() => {
+        onClose();
+      }, 50);
+    } else {
+      showToast('Não foi possível abrir a tela de avaliação.', 'error');
     }
   };
 
-  // Tela de avaliação
-  if (modalState === 'rate') {
-    return (
-      <RateAppointmentScreen
-        appointment={appointment}
-        token={token}
-        onBack={handleBackFromRate}
-        onSuccess={handleRateSuccess}
-      />
-    );
-  }
+  const handleComplete = () => {
+    setCompleteConfirmModal(true);
+  };
+
+  const confirmComplete = async () => {
+    setCompleteConfirmModal(false);
+    setLoading(true);
+    try {
+      console.log('[APPOINTMENT-DETAILS] Finalizando consulta:', {
+        appointmentId: appointment.id,
+        appointmentStatus: appointment.status,
+        professionalId: appointment.professional?.id,
+      });
+      await appointmentService.completeAppointment(token, appointment.id);
+      setSuccessModal(true);
+    } catch (error: any) {
+      console.error('[APPOINTMENT-DETAILS] Erro ao finalizar consulta:', {
+        error,
+        message: error?.message,
+        response: error?.response,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
+
+      // Tratar diferentes tipos de erro
+      let errorMessage = 'Não foi possível finalizar a consulta.';
+
+      if (!error.response) {
+        // Erro de rede ou timeout
+        if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
+          errorMessage = 'Tempo de espera esgotado. Verifique sua conexão e tente novamente.';
+        } else if (error.message?.includes('Network Error') || error.code === 'ERR_NETWORK') {
+          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        } else {
+          errorMessage = 'Verifique sua conexão com a internet e tente novamente.';
+        }
+        showToast(errorMessage, 'error');
+        setLoading(false);
+        return;
+      }
+
+      // Erro com resposta do servidor
+      const statusCode = error.response?.status;
+      const responseData = error.response?.data;
+
+      if (statusCode === 401) {
+        errorMessage = 'Sua sessão expirou. Por favor, faça login novamente.';
+      } else if (statusCode === 403) {
+        errorMessage = responseData?.message || 'Você não tem permissão para finalizar esta consulta.';
+      } else if (statusCode === 404) {
+        errorMessage = 'Agendamento não encontrado.';
+      } else if (statusCode === 400) {
+        errorMessage = responseData?.message || 'Não é possível finalizar esta consulta.';
+      } else if (statusCode >= 500) {
+        errorMessage = 'Erro no servidor. Tente novamente mais tarde.';
+      } else {
+        // Tentar extrair mensagem de erro do servidor
+        if (responseData?.message) {
+          if (Array.isArray(responseData.message)) {
+            errorMessage = responseData.message.join(', ');
+          } else {
+            errorMessage = responseData.message;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      }
+
+      setErrorModal({ visible: true, message: errorMessage });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Obter data/hora da consulta ou do cancelamento/conclusão
   const getActionDate = () => {
@@ -248,7 +316,21 @@ export default function AppointmentDetailsModal({
 
             {/* Botões de Ação */}
             <View style={styles.actionsContainer}>
-              {isCompleted && (
+              {canComplete && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.completeButton]}
+                  onPress={handleComplete}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.actionButtonText}>FINALIZAR CONSULTA</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+              {isCompleted && userRole === 'PATIENT' && (
                 <TouchableOpacity
                   style={styles.actionButton}
                   onPress={handleRate}
@@ -282,7 +364,7 @@ export default function AppointmentDetailsModal({
                   </TouchableOpacity>
                 </>
               )}
-              {isCanceled && (
+              {isCanceled && userRole === 'PATIENT' && (
                 <TouchableOpacity
                   style={[styles.actionButton, styles.rateButtonDisabled]}
                   onPress={handleRate}
@@ -295,6 +377,19 @@ export default function AppointmentDetailsModal({
           </ScrollView>
         </View>
       </View>
+
+      {/* Modal de Confirmação de Finalização */}
+      <AlertModal
+        visible={completeConfirmModal}
+        title="Finalizar Consulta"
+        message={`Deseja realmente finalizar a consulta com ${appointment.patient?.fullName || 'o paciente'}?`}
+        type="info"
+        confirmText="Sim, Finalizar"
+        cancelText="Não"
+        showCancel={true}
+        onConfirm={confirmComplete}
+        onCancel={() => setCompleteConfirmModal(false)}
+      />
 
       {/* Modal de Confirmação de Cancelamento */}
       <AlertModal
@@ -313,7 +408,7 @@ export default function AppointmentDetailsModal({
       <AlertModal
         visible={successModal}
         title="Sucesso! ✅"
-        message="Consulta cancelada com sucesso."
+        message="Operação realizada com sucesso."
         type="success"
         onConfirm={() => {
           setSuccessModal(false);
@@ -454,6 +549,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: colors.primary,
+  },
+  completeButton: {
+    backgroundColor: '#4CAF50',
   },
   rateButtonDisabled: {
     backgroundColor: '#9E9E9E',

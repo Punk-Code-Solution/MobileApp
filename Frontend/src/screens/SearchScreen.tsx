@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -29,6 +30,7 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [screenState, setScreenState] = useState<ScreenState>('search');
 
@@ -53,7 +55,7 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
     setFilteredProfessionals(filtered);
   }, [searchQuery, professionals]);
 
-  const fetchProfessionals = async () => {
+  const fetchProfessionals = useCallback(async () => {
     try {
       setLoading(true);
       const data = await professionalService.getAll(token);
@@ -66,8 +68,14 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
       setFilteredProfessionals([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [token]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchProfessionals();
+  }, [fetchProfessionals]);
 
   const handleProfessionalPress = (professional: Professional) => {
     setSelectedProfessional(professional);
@@ -180,6 +188,14 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
               renderItem={renderProfessionalItem}
               contentContainerStyle={styles.list}
               showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
+                />
+              }
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyIcon}>🔍</Text>

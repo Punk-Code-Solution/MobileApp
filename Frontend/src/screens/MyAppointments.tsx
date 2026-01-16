@@ -16,10 +16,12 @@ import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
+import RateAppointmentScreen from './RateAppointmentScreen';
 import { appointmentService } from '../services/api/appointment.service';
 
 interface MyAppointmentsProps {
   token: string;
+  userRole?: 'PATIENT' | 'PROFESSIONAL';
   onBack?: () => void;
   onNavigateToChat?: (conversationIdOrProfessionalId: string, professionalName: string, professionalAvatar?: string) => void;
   onShowNotifications?: () => void;
@@ -27,7 +29,7 @@ interface MyAppointmentsProps {
 }
 
 type TabType = 'upcoming' | 'history';
-type ScreenState = 'list' | 'history';
+type ScreenState = 'list' | 'history' | 'rate';
 
 // Função para formatar data (DD/MM/YYYY)
 const formatDate = (dateString: string): string => {
@@ -46,11 +48,12 @@ const formatTime = (dateString: string): string => {
   return `${hours}:${minutes}`;
 };
 
-export default function MyAppointments({ token, onBack, onNavigateToChat, onShowNotifications, unreadNotificationsCount = 0 }: MyAppointmentsProps) {
+export default function MyAppointments({ token, userRole, onBack, onNavigateToChat, onShowNotifications, unreadNotificationsCount = 0 }: MyAppointmentsProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [ratingAppointment, setRatingAppointment] = useState<Appointment | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
   const [hasAppointments, setHasAppointments] = useState(false);
   const [screenState, setScreenState] = useState<ScreenState>('list');
@@ -100,7 +103,7 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // Filtrar consultas baseado na tab ativa
+  // Filtrar e ordenar consultas baseado na tab ativa
   // Garantir que appointments seja sempre um array antes de usar filter
   // Validação adicional: apenas exibir consultas válidas vinculadas ao usuário
   const filteredAppointments = (Array.isArray(appointments) ? appointments : [])
@@ -120,6 +123,18 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
         return !isCompleted && !isCanceled && !isPast;
       } else {
         return isCompleted || isCanceled || isPast;
+      }
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.scheduledAt).getTime();
+      const dateB = new Date(b.scheduledAt).getTime();
+      
+      if (activeTab === 'upcoming') {
+        // Para próximas: ordenar crescente (mais próximas primeiro)
+        return dateA - dateB;
+      } else {
+        // Para histórico: ordenar decrescente (mais recentes primeiro)
+        return dateB - dateA;
       }
     });
 
@@ -186,6 +201,25 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
         token={token}
         onBack={() => setScreenState('list')}
         onNavigateToChat={onNavigateToChat}
+      />
+    );
+  }
+
+  // Tela de avaliação
+  if (ratingAppointment) {
+    return (
+      <RateAppointmentScreen
+        appointment={ratingAppointment}
+        token={token}
+        onBack={() => {
+          setRatingAppointment(null);
+          setSelectedAppointment(null);
+        }}
+        onSuccess={() => {
+          setRatingAppointment(null);
+          setSelectedAppointment(null);
+          fetchAppointments();
+        }}
       />
     );
   }
@@ -342,10 +376,20 @@ export default function MyAppointments({ token, onBack, onNavigateToChat, onShow
         <AppointmentDetailsModal
           appointment={selectedAppointment}
           token={token}
+          userRole={userRole}
           onClose={() => setSelectedAppointment(null)}
           onCancelSuccess={() => {
             fetchAppointments();
             setSelectedAppointment(null);
+          }}
+          onRateAppointment={(appointment) => {
+            // Primeiro definir a tela de avaliação
+            setRatingAppointment(appointment);
+            // Depois limpar o modal (isso vai fechar o modal)
+            // Usar setTimeout para garantir que o estado seja atualizado antes de fechar
+            setTimeout(() => {
+              setSelectedAppointment(null);
+            }, 50);
           }}
           onSendMessage={(conversationId, professionalId, professionalName, professionalAvatar) => {
             if (onNavigateToChat) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TextInput,
   ActivityIndicator,
   Animated,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -34,14 +35,15 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
   const [doctors, setDoctors] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const fadeOpacity = useFadeIn(400);
 
   useEffect(() => {
     fetchDoctors();
-  }, []);
+  }, [fetchDoctors]);
 
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     try {
       // Validação de token já é feita no service, mas podemos adicionar tratamento de erro específico
       const doctorsData = await professionalService.getAll(token);
@@ -55,8 +57,14 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
       setDoctors([]); // Garantir que seja um array vazio em caso de erro
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [token]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchDoctors();
+  }, [fetchDoctors]);
 
   const handleProfessionalPress = (professional: Professional) => {
     setSelectedProfessional(professional);
@@ -209,6 +217,14 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
         >
         <Text style={styles.sectionTitle}>Serviços em destaque</Text>
 
