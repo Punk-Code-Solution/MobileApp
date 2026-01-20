@@ -436,4 +436,16 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](./LICENSE) para 
 
 ---
 
-**Desenvolvido com ❤️ para facilitar o acesso à saúde**
+## ©️ Copyright
+
+**© 2025-2026 Punk Code Solution - Todos os direitos reservados**
+
+**CNPJ:** 61.805.210/0001-41  
+**Endereço:** Rua do Aconchego, Ilhéus - BA  
+**CEP:** 45656-627
+
+Este software é propriedade da Punk Code Solution e está protegido pelas leis de direitos autorais brasileiras e internacionais. O uso, cópia, modificação ou distribuição deste software só é permitido de acordo com os termos da licença MIT incluída neste projeto.
+
+---
+
+**Desenvolvido com ❤️ pela Punk Code Solution para facilitar o acesso à saúde**

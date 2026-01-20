@@ -2,6 +2,12 @@
   "name": "Front-End",
   "version": "0.0.1",
   "private": true,
+  "author": {
+    "name": "Punk Code Solution",
+    "email": "punkcodesolution@gmail.com"
+  },
+  "license": "MIT",
+  "copyright": "© 2025-2026 Punk Code Solution - CNPJ: 61.805.210/0001-41",
   "scripts": {
     "android": "react-native run-android",
     "android:safe": "powershell -ExecutionPolicy Bypass -File .\\android-safe.ps1",

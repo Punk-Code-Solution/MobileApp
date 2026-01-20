@@ -1,10 +1,14 @@
 {
   "name": "Back-End",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Sistema de Telemedicina - Backend API",
+  "author": {
+    "name": "Punk Code Solution",
+    "email": "contato@punkcodesolution.com"
+  },
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "copyright": "© 2025-2026 Punk Code Solution - CNPJ: 61.805.210/0001-41",
   "scripts": {
     "build": "npx nest build",
     "postinstall": "npx prisma generate --schema=./prisma/schema.prisma || true",

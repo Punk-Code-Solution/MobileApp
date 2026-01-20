@@ -46,6 +46,19 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         <ActivityIndicator size="large" color="#FFFFFF" />
         <Text style={styles.loadingText}>Carregando...</Text>
       </View>
+
+      {/* Copyright */}
+      <View style={styles.copyrightContainer}>
+        <Text style={styles.copyrightText}>
+          © {new Date().getFullYear()} Punk Code Solution
+        </Text>
+        <Text style={styles.copyrightSubtext}>
+          CNPJ: 61.805.210/0001-41
+        </Text>
+        <Text style={styles.copyrightSubtext}>
+          Ilhéus - BA
+        </Text>
+      </View>
     </View>
   );
 }
@@ -102,6 +115,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.8,
     marginTop: 12,
+  },
+  copyrightContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    width: '100%',
+  },
+  copyrightText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  copyrightSubtext: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    opacity: 0.7,
+    marginTop: 2,
   },
 });
 

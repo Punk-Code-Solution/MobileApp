@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Front-End</string>
+    <string name="copyright">© 2025-2026 Punk Code Solution - CNPJ: 61.805.210/0001-41</string>
+    <string name="company_name">Punk Code Solution</string>
+    <string name="company_address">Rua do Aconchego, Ilhéus - BA, CEP 45656-627</string>
 </resources>

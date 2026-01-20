@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
+import AboutScreen from './AboutScreen';
 
 interface ProfileOptionsScreenProps {
   onBack: () => void;
@@ -18,6 +19,7 @@ interface ProfileOptionsScreenProps {
 export default function ProfileOptionsScreen({
   onBack,
 }: ProfileOptionsScreenProps) {
+  const [showAbout, setShowAbout] = useState(false);
 
   const handleSettings = () => {
     Alert.alert('Configurações', 'Funcionalidade de configurações será implementada em breve.');
@@ -30,6 +32,14 @@ export default function ProfileOptionsScreen({
   const handleHelp = () => {
     Alert.alert('Ajuda e Suporte', 'Funcionalidade de ajuda será implementada em breve.');
   };
+
+  const handleAbout = () => {
+    setShowAbout(true);
+  };
+
+  if (showAbout) {
+    return <AboutScreen onBack={() => setShowAbout(false)} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -78,6 +88,14 @@ export default function ProfileOptionsScreen({
           activeOpacity={0.7}
         >
           <Text style={styles.optionText}>Ajuda e Suporte</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.optionButton}
+          onPress={handleAbout}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.optionText}>Sobre o App</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

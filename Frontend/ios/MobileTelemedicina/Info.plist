@@ -50,5 +50,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2025-2026 Punk Code Solution - CNPJ: 61.805.210/0001-41</string>
+	<key>CompanyName</key>
+	<string>Punk Code Solution</string>
+	<key>CompanyAddress</key>
+	<string>Rua do Aconchego, Ilhéus - BA, CEP 45656-627</string>
 </dict>
 </plist>
