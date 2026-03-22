@@ -159,7 +159,7 @@ export default function NotificationsScreen({
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
       
       {/* Header */}

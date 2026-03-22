@@ -141,7 +141,7 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
       
       {/* Header */}

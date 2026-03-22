@@ -280,7 +280,7 @@ export default function MessagesScreen({ token, initialConversation, onConversat
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['left', 'right']} style={styles.container}>
         <StatusBar barStyle="light-content" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FFFFFF" />
@@ -290,7 +290,7 @@ export default function MessagesScreen({ token, initialConversation, onConversat
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* Header Azul */}

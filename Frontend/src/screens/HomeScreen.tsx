@@ -12,7 +12,7 @@ import { useUnreadCounts } from '../hooks/useUnreadCounts';
 
 interface HomeScreenProps {
   token: string;
-  onLogout: () => void;
+  onLogout: () => Promise<void>;
   userRole?: 'PATIENT' | 'PROFESSIONAL';
 }
 
@@ -81,7 +81,7 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar barStyle="light-content" />
       
       {activeTab === 'home' && userRole !== 'PROFESSIONAL' && (
@@ -113,7 +113,6 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
       )}
       {activeTab === 'profile' && (
         <ProfileScreen 
-          token={token} 
           onLogout={onLogout}
           onShowNotifications={handleShowNotifications}
           unreadNotificationsCount={unreadCounts.notifications}

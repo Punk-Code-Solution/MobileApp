@@ -18,6 +18,7 @@ import { isTokenValid } from './src/utils/token.util';
 import { ToastProvider } from './src/hooks/useToast';
 import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
+import SelectTypeScreen from './src/screens/SelectTypeScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
@@ -27,19 +28,19 @@ import EmailVerificationScreen from './src/screens/EmailVerificationScreen';
 import EmailVerificationSuccessScreen from './src/screens/EmailVerificationSuccessScreen';
 import CompletePatientProfileScreen from './src/screens/CompletePatientProfileScreen';
 
-type AuthScreen = 'login' | 'register' | 'emailVerification' | 'emailVerificationSuccess' | 'forgotPassword' | 'resetPassword' | 'resetSuccess' | 'completePatientProfile';
+type AuthScreen = 'selectType' | 'login' | 'register' | 'emailVerification' | 'emailVerificationSuccess' | 'forgotPassword' | 'resetPassword' | 'resetSuccess' | 'completePatientProfile';
 
 const TOKEN_KEY = '@telemedicina:token';
 const USER_DATA_KEY = '@telemedicina:userData';
 
 // Variável global para callback de logout (usado pelo interceptor do axios)
-let globalLogoutCallback: (() => void) | null = null;
+let globalLogoutCallback: (() => Promise<void>) | null = null;
 
-export const setGlobalLogoutCallback = (callback: () => void) => {
+export const setGlobalLogoutCallback = (callback: (() => Promise<void>) | null) => {
   globalLogoutCallback = callback;
 };
 
-export const getGlobalLogoutCallback = (): (() => void) | null => {
+export const getGlobalLogoutCallback = (): (() => Promise<void>) | null => {
   return globalLogoutCallback;
 };
 
@@ -48,7 +49,8 @@ export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState<AuthScreen>('login');
+  const [currentScreen, setCurrentScreen] = useState<AuthScreen>('selectType');
+  const [selectedUserType, setSelectedUserType] = useState<'PATIENT' | 'PROFESSIONAL'>('PATIENT');
   const [registerEmail, setRegisterEmail] = useState('');
   const [isLoadingToken, setIsLoadingToken] = useState(true);
 
@@ -157,7 +159,7 @@ export default function App() {
     
     setToken(null);
     setUserData(null);
-    setCurrentScreen('login');
+    setCurrentScreen('selectType');
   };
 
   // Configurar callback de logout global para uso no interceptor do axios
@@ -190,10 +192,6 @@ export default function App() {
     setCurrentScreen('resetSuccess');
   };
 
-  const handleCreateAccount = () => {
-    setCurrentScreen('register');
-  };
-
   const handleRegisterSuccess = (email: string) => {
     setRegisterEmail(email);
     setCurrentScreen('emailVerification');
@@ -221,7 +219,7 @@ export default function App() {
               AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUserData));
               setUserData(updatedUserData);
             }
-            setCurrentScreen('login'); // Reset para forçar renderização do HomeScreen
+            setCurrentScreen('selectType'); // Reset para forçar renderização do HomeScreen
             // O useEffect vai detectar o token e renderizar HomeScreen
           }}
         />
@@ -240,10 +238,25 @@ export default function App() {
   // --- TELAS DE AUTENTICAÇÃO ---
   const renderAuthScreen = () => {
     switch (currentScreen) {
+    case 'selectType':
+      return (
+        <SelectTypeScreen
+          onLogin={(userType) => {
+            setSelectedUserType(userType);
+            setCurrentScreen('login');
+          }}
+          onRegister={(userType) => {
+            setSelectedUserType(userType);
+            setCurrentScreen('register');
+          }}
+          loading={loading}
+        />
+      );
+
     case 'register':
       return (
         <RegisterScreen
-          onBack={handleBackToLogin}
+          onBack={() => setCurrentScreen('selectType')}
           onSuccess={() => handleRegisterSuccess(registerEmail)}
         />
       );
@@ -290,7 +303,9 @@ export default function App() {
         <LoginScreen
           onLogin={handleLogin}
           onForgotPassword={handleForgotPassword}
-          onCreateAccount={handleCreateAccount}
+          onCreateAccount={() => setCurrentScreen('register')}
+          selectedUserType={selectedUserType}
+          onBackToSelectType={() => setCurrentScreen('selectType')}
           loading={loading}
         />
       );

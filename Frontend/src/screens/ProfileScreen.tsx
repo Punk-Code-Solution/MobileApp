@@ -7,41 +7,29 @@ import {
   Image,
   StatusBar,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import ProfileOptionsScreen from './ProfileOptionsScreen';
 
 interface ProfileScreenProps {
-  token: string;
-  onLogout: () => void;
+  onLogout: () => Promise<void>;
   onShowNotifications?: () => void;
   unreadNotificationsCount?: number;
 }
 
 type ScreenState = 'profile' | 'options';
 
-export default function ProfileScreen({ token, onLogout, onShowNotifications, unreadNotificationsCount = 0 }: ProfileScreenProps) {
+export default function ProfileScreen({ onLogout, onShowNotifications, unreadNotificationsCount = 0 }: ProfileScreenProps) {
   const [screenState, setScreenState] = useState<ScreenState>('profile');
-  const [userName, setUserName] = useState('Usuário');
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const userName = 'Usuário';
 
   const handleLogout = () => {
-    Alert.alert(
-      'Sair',
-      'Deseja realmente sair da sua conta?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Sair',
-          style: 'destructive',
-          onPress: onLogout,
-        },
-      ]
-    );
+    setShowLogoutConfirm(false);
+    onLogout().catch((error) => {
+      console.error('Erro ao deslogar:', error);
+    });
   };
 
   // Se estiver na tela de opções, mostra ela
@@ -54,7 +42,7 @@ export default function ProfileScreen({ token, onLogout, onShowNotifications, un
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* Header Azul Escuro */}
@@ -110,12 +98,44 @@ export default function ProfileScreen({ token, onLogout, onShowNotifications, un
         {/* Botão de Sair */}
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={handleLogout}
+          onPress={() => setShowLogoutConfirm(true)}
           activeOpacity={0.8}
         >
           <Text style={styles.logoutButtonText}>Sair</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {showLogoutConfirm && (
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            onPress={() => setShowLogoutConfirm(false)}
+            activeOpacity={1}
+          />
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Confirmar saída</Text>
+            <Text style={styles.modalMessage}>Deseja realmente sair da sua conta?</Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowLogoutConfirm(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleLogout}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmButtonText}>Sair</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -232,6 +252,62 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    zIndex: 999,
+    elevation: 20,
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  modalContainer: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: colors.text.secondary,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#E9EDF5',
+  },
+  confirmButton: {
+    backgroundColor: '#FF3B30',
+  },
+  cancelButtonText: {
+    color: colors.text.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
 

@@ -234,7 +234,7 @@ export default function ChatScreen({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* Header Azul */}

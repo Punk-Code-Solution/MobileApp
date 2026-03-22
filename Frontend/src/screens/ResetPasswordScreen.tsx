@@ -58,7 +58,7 @@ export default function ResetPasswordScreen({
       colors={[colors.gradient.top, colors.gradient.bottom]}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['left', 'right']} style={styles.container}>
         <StatusBar barStyle="light-content" />
         <ScrollView
           contentContainerStyle={styles.scrollContent}

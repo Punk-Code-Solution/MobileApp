@@ -183,7 +183,7 @@ export default function MedicalHistoryScreen({
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['left', 'right']} style={styles.container}>
         <StatusBar barStyle="light-content" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FFFFFF" />
@@ -193,7 +193,7 @@ export default function MedicalHistoryScreen({
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
       
       {/* Header */}

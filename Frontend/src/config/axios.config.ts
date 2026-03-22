@@ -53,11 +53,9 @@ api.interceptors.response.use(
         if (logoutCallback) {
           // Usar setTimeout para evitar problemas de sincronização
           setTimeout(() => {
-            try {
-              logoutCallback();
-            } catch (callbackError) {
+            logoutCallback().catch((callbackError) => {
               console.error('Erro ao chamar callback de logout:', callbackError);
-            }
+            });
           }, 100);
         }
       }

@@ -24,7 +24,7 @@ interface CallScreenProps {
 
 export default function CallScreen({ professional, onBack, onEndCall }: CallScreenProps) {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.content}>

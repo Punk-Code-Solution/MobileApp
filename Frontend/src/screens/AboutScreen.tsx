@@ -18,7 +18,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
 
       {/* Header Azul Escuro */}

@@ -198,7 +198,7 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
     : filteredDoctors.slice(0, 5);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
       
       {/* Header Azul */}

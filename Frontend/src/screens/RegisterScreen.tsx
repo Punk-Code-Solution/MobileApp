@@ -237,7 +237,7 @@ export default function RegisterScreen({ onBack, onSuccess }: RegisterScreenProp
       colors={[colors.gradient.top, colors.gradient.bottom]}
       style={styles.gradient}
     >
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView edges={['left', 'right']} style={styles.container}>
         <StatusBar barStyle="light-content" />
         {/* Header com botão de voltar */}
         <View style={styles.header}>

@@ -24,7 +24,7 @@ interface VideoScreenProps {
 
 export default function VideoScreen({ professional, onBack, onEndCall }: VideoScreenProps) {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <StatusBar barStyle="light-content" />
       
       <View style={styles.content}>

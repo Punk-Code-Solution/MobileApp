@@ -2,52 +2,37 @@ import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
   StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import { colors } from '../theme/colors';
-import { useToast } from '../hooks/useToast';
 
-interface LoginScreenProps {
-  onLogin: (email: string, password: string, role: 'PATIENT' | 'PROFESSIONAL') => Promise<void>;
-  onForgotPassword: () => void;
-  onCreateAccount: () => void;
-  onBackToSelectType: () => void;
-  selectedUserType: 'PATIENT' | 'PROFESSIONAL';
+interface SelectTypeScreenProps {
+  onLogin: (userType: 'PATIENT' | 'PROFESSIONAL') => void;
+  onRegister: (userType: 'PATIENT' | 'PROFESSIONAL') => void;
   loading?: boolean;
 }
 
-export default function LoginScreen({
+export default function SelectTypeScreen({
   onLogin,
-  onForgotPassword,
-  onCreateAccount,
-  onBackToSelectType,
-  selectedUserType,
+  onRegister,
   loading = false,
-}: LoginScreenProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { showToast } = useToast();
+}: SelectTypeScreenProps) {
+  const [userType, setUserType] = useState<'PATIENT' | 'PROFESSIONAL'>('PATIENT');
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      showToast('Preencha email e senha', 'warning');
+  const handleSelectTypeAndLogin = (selectedType: 'PATIENT' | 'PROFESSIONAL') => {
+    if (loading) {
       return;
     }
-
-    await onLogin(email, password, selectedUserType);
+    setUserType(selectedType);
+    onLogin(selectedType);
   };
 
   return (
-    <LinearGradient
-      colors={['#0E4EA8', '#EAF1F8']}
-      style={styles.gradient}
-    >
+    <LinearGradient colors={['#0E4EA8', '#EAF1F8']} style={styles.gradient}>
       <SafeAreaView edges={['left', 'right']} style={styles.container}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.phoneFrame}>
@@ -55,69 +40,44 @@ export default function LoginScreen({
               <Text style={styles.logoText}>Pronto</Text>
               <View style={styles.logoDivider} />
               <Text style={styles.tagline}>Conectando clientes e profissionais</Text>
-              <TouchableOpacity onPress={onBackToSelectType}>
-                <Text style={styles.changeTypeLink}>
-                  Entrando como {selectedUserType === 'PATIENT' ? 'Cliente' : 'Profissional'} - alterar
-                </Text>
-              </TouchableOpacity>
             </View>
 
-            <View style={styles.formCard}>
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="seu@email.com"
-                    placeholderTextColor="#8A96BC"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputContainer}>
-                <View style={styles.passwordHeader}>
-                  <Text style={styles.label}>Senha</Text>
-                  <TouchableOpacity onPress={onForgotPassword}>
-                    <Text style={styles.forgotPasswordLink}>Esqueceu a senha?</Text>
+            <View style={styles.heroBackground}>
+              <LinearGradient
+                colors={['rgba(255,255,255,0.78)', 'rgba(255,255,255,0.92)']}
+                style={styles.heroOverlay}
+              >
+                <View style={styles.roleSelector}>
+                  <TouchableOpacity
+                    style={[
+                      styles.roleButton,
+                      styles.roleButtonFilled,
+                      userType === 'PATIENT' && styles.roleButtonActive,
+                    ]}
+                    onPress={() => handleSelectTypeAndLogin('PATIENT')}
+                    activeOpacity={0.85}
+                    disabled={loading}
+                  >
+                    <Text style={styles.roleButtonTextFilled}>Sou Cliente</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.roleButton,
+                      styles.roleButtonOutline,
+                      userType === 'PROFESSIONAL' && styles.roleButtonActiveOutline,
+                    ]}
+                    onPress={() => handleSelectTypeAndLogin('PROFESSIONAL')}
+                    activeOpacity={0.85}
+                    disabled={loading}
+                  >
+                    <Text style={styles.roleButtonTextOutline}>Sou Profissional</Text>
                   </TouchableOpacity>
                 </View>
-                <View style={styles.inputWrapper}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="********"
-                    placeholderTextColor="#8A96BC"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                  />
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.buttonText}>ENTRAR</Text>
-                )}
-              </TouchableOpacity>
-
-              <View style={styles.signupContainer}>
-                <Text style={styles.signupText}>Nao tem conta? </Text>
-                <TouchableOpacity onPress={onCreateAccount}>
-                  <Text style={styles.signupLink}>Criar conta</Text>
-                </TouchableOpacity>
-              </View>
+              </LinearGradient>
             </View>
+
         </View>
+
       </SafeAreaView>
     </LinearGradient>
   );
@@ -130,10 +90,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  heroImage: {
+    width: '100%',
+    height: 200,
+    opacity: 0.85,
+    marginBottom: 16,
+  },
   phoneFrame: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 42,
-    borderWidth: 4,
+    borderRadius: 50,
+    borderWidth: 5,
     borderColor: '#0B4A9D',
     overflow: 'hidden',
     flex: 1,
@@ -144,6 +110,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 18,
     elevation: 9,
+    marginBottom: 0,
   },
   logoWrap: {
     paddingTop: 36,
@@ -169,14 +136,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  changeTypeLink: {
-    marginTop: 10,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0A56B7',
-  },
   heroBackground: {
-    marginTop: 22,
+    marginTop: 36,
     marginHorizontal: 22,
     borderRadius: 18,
     overflow: 'hidden',
@@ -265,9 +226,9 @@ const styles = StyleSheet.create({
     color: '#0A56B7',
   },
   formCard: {
-    marginTop: 14,
+    marginTop: 20,
     marginHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 24,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
@@ -295,6 +256,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 16,
+    zIndex: 1,
   },
   signupText: {
     fontSize: 14,
