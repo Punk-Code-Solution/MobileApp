@@ -21,11 +21,18 @@ interface SearchScreenProps {
   token: string;
   onBack: () => void;
   onSelectProfessional?: (professional: Professional) => void;
+  /** Quando usado como aba principal (sem voltar) */
+  showBackButton?: boolean;
 }
 
 type ScreenState = 'search' | 'details';
 
-export default function SearchScreen({ token, onBack, onSelectProfessional }: SearchScreenProps) {
+export default function SearchScreen({
+  token,
+  onBack,
+  onSelectProfessional,
+  showBackButton = true,
+}: SearchScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [filteredProfessionals, setFilteredProfessionals] = useState<Professional[]>([]);
@@ -146,9 +153,13 @@ export default function SearchScreen({ token, onBack, onSelectProfessional }: Se
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
+        {showBackButton ? (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} />
+        )}
         <Text style={styles.headerTitle}>Buscar Profissional</Text>
         <View style={styles.placeholder} />
       </View>

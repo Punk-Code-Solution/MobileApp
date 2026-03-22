@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
+import AppointmentDetails from './AppointmentDetails';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
 import RateAppointmentScreen from './RateAppointmentScreen';
 import { appointmentService } from '../services/api/appointment.service';
@@ -121,8 +122,10 @@ export default function MyAppointments({ token, userRole, onBack, onNavigateToCh
   }, [token]);
 
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+    if (userRole === 'PROFESSIONAL') {
+      fetchAppointments();
+    }
+  }, [fetchAppointments, userRole]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -246,6 +249,18 @@ export default function MyAppointments({ token, userRole, onBack, onNavigateToCh
           setSelectedAppointment(null);
           fetchAppointments();
         }}
+      />
+    );
+  }
+
+  /** Paciente: agenda diária (mockup) — tela dedicada */
+  if (userRole !== 'PROFESSIONAL') {
+    return (
+      <AppointmentDetails
+        token={token}
+        onNavigateToChat={onNavigateToChat}
+        onShowNotifications={onShowNotifications}
+        unreadNotificationsCount={unreadNotificationsCount}
       />
     );
   }

@@ -1,115 +1,143 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { colors } from '../theme/colors';
+import { View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type TabType = 'home' | 'messages' | 'appointments' | 'profile';
+export type TabType = 'home' | 'search' | 'appointments' | 'messages' | 'profile';
 
 interface BottomNavigationProps {
   activeTab: TabType;
   onTabPress: (tab: TabType) => void;
   unreadMessagesCount?: number;
-  userRole?: 'PATIENT' | 'PROFESSIONAL';
 }
+
+const NAVY = '#1A4A8E';
+const INACTIVE = '#94A3B8';
+
+const ALL_TABS: { id: TabType; label: string; icon: string }[] = [
+  { id: 'home', label: 'Início', icon: '🏠' },
+  { id: 'search', label: 'Buscar', icon: '🔍' },
+  { id: 'appointments', label: 'Agendamentos', icon: '📅' },
+  { id: 'messages', label: 'Mensagens', icon: '💬' },
+  { id: 'profile', label: 'Perfil', icon: '👤' },
+];
 
 export default function BottomNavigation({
   activeTab,
   onTabPress,
   unreadMessagesCount = 0,
-  userRole,
 }: BottomNavigationProps) {
-  const allTabs: { id: TabType; label: string; icon: string }[] = [
-    { id: 'home', label: 'INÍCIO', icon: '🏠' },
-    { id: 'messages', label: 'MENSAGENS', icon: '💬' },
-    { id: 'appointments', label: 'CONSULTAS', icon: '📋' },
-    { id: 'profile', label: 'PERFIL', icon: '👤' },
-  ];
-  
-  // Filtrar tabs: profissionais não veem a aba "home"
-  const tabs = userRole === 'PROFESSIONAL' 
-    ? allTabs.filter(tab => tab.id !== 'home')
-    : allTabs;
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 10);
+
+  const tabs = ALL_TABS;
 
   return (
-    <View style={styles.container}>
-      {tabs.map((tab) => (
-        <TouchableOpacity
-          key={tab.id}
-          style={styles.tab}
-          onPress={() => onTabPress(tab.id)}
-          activeOpacity={0.7}
-        >
-          <View style={styles.iconContainer}>
-            <Text style={styles.icon}>{tab.icon}</Text>
-            {tab.id === 'messages' && unreadMessagesCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
-                </Text>
-              </View>
-            )}
-          </View>
-          <Text style={[styles.label, activeTab === tab.id && styles.labelActive]}>
-            {tab.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+    <View
+      style={[
+        styles.wrap,
+        {
+          paddingBottom: bottomPad,
+          shadowOpacity: Platform.OS === 'ios' ? 0.08 : 0.12,
+        },
+      ]}
+    >
+      {tabs.map((tab) => {
+        const active = activeTab === tab.id;
+        return (
+          <TouchableOpacity
+            key={tab.id}
+            style={styles.tab}
+            onPress={() => onTabPress(tab.id)}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={tab.label}
+          >
+            <View style={styles.iconWrap}>
+              <Text style={[styles.icon, { opacity: active ? 1 : 0.85 }]}>{tab.icon}</Text>
+              {tab.id === 'messages' && unreadMessagesCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.label, active ? styles.labelActive : styles.labelInactive]} numberOfLines={1}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrap: {
     flexDirection: 'row',
-    backgroundColor: colors.navigation.darkBlue,
-    paddingVertical: 12,
-    paddingBottom: 20,
-    paddingTop: 8,
-    borderTopWidth: 0,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 10,
+    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E2E8F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 0,
   },
-  iconContainer: {
+  iconWrap: {
     position: 'relative',
     marginBottom: 4,
   },
   icon: {
-    fontSize: 24,
+    fontSize: 22,
   },
   badge: {
     position: 'absolute',
-    top: -8,
-    right: -12,
-    backgroundColor: '#FF3B30',
+    top: -6,
+    right: -10,
+    backgroundColor: '#EF4444',
     borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    minWidth: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     borderWidth: 2,
-    borderColor: colors.navigation.darkBlue,
+    borderColor: '#FFFFFF',
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
+    fontSize: 9,
+    fontWeight: '800',
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    color: colors.text.light,
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
   labelActive: {
-    fontWeight: '700',
+    color: NAVY,
+    fontWeight: '800',
+  },
+  labelInactive: {
+    color: INACTIVE,
+    fontWeight: '600',
   },
 });
-

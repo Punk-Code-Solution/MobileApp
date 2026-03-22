@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import NewHomeScreen from './NewHomeScreen';
+import SearchScreen from './SearchScreen';
 import MyAppointments from './MyAppointments';
 import MessagesScreen from './MessagesScreen';
 import ProfileScreen from './ProfileScreen';
 import NotificationsScreen from './NotificationsScreen';
-import BottomNavigation from '../components/BottomNavigation';
+import BottomNavigation, { TabType } from '../components/BottomNavigation';
 import { useUnreadCounts } from '../hooks/useUnreadCounts';
 
 interface HomeScreenProps {
@@ -16,13 +17,10 @@ interface HomeScreenProps {
   userRole?: 'PATIENT' | 'PROFESSIONAL';
 }
 
-type TabType = 'home' | 'messages' | 'appointments' | 'profile';
 type OverlayType = 'notifications' | null;
 
 export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProps) {
-  // Se for PROFESSIONAL, iniciar na tela de consultas; caso contrário, iniciar na tela home
-  const initialTab: TabType = userRole === 'PROFESSIONAL' ? 'appointments' : 'home';
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const [activeTab, setActiveTab] = useState<TabType>('home');
   const [overlay, setOverlay] = useState<OverlayType>(null);
   const [initialConversation, setInitialConversation] = useState<{
     professionalId?: string;
@@ -30,34 +28,24 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
     professionalName: string;
     professionalAvatar?: string;
   } | null>(null);
-  
-  // Buscar contadores de não lidas
+
   const { unreadCounts, refresh: refreshCounts } = useUnreadCounts(token);
 
-  // Evita área principal vazia: profissionais não têm "home" — se activeTab ficar 'home', corrige
-  useEffect(() => {
-    if (userRole === 'PROFESSIONAL' && activeTab === 'home') {
-      setActiveTab('appointments');
-    }
-  }, [userRole, activeTab]);
-
   const handleTabPress = (tab: TabType) => {
-    // Profissionais não podem acessar a aba "home", redirecionar para "appointments"
-    if (userRole === 'PROFESSIONAL' && tab === 'home') {
-      setActiveTab('appointments');
-      return;
-    }
     setActiveTab(tab);
   };
 
-  const handleNavigateToChat = (conversationIdOrProfessionalId: string, professionalName: string, professionalAvatar?: string) => {
-    // Se for UUID (conversationId), usar diretamente; senão é professionalId
-    const isConversationId = conversationIdOrProfessionalId.length > 20; // UUIDs são mais longos
-    setInitialConversation({ 
+  const handleNavigateToChat = (
+    conversationIdOrProfessionalId: string,
+    professionalName: string,
+    professionalAvatar?: string,
+  ) => {
+    const isConversationId = conversationIdOrProfessionalId.length > 20;
+    setInitialConversation({
       professionalId: isConversationId ? '' : conversationIdOrProfessionalId,
       conversationId: isConversationId ? conversationIdOrProfessionalId : undefined,
-      professionalName, 
-      professionalAvatar 
+      professionalName,
+      professionalAvatar,
     });
     setActiveTab('messages');
   };
@@ -72,11 +60,9 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
 
   const handleCloseNotifications = () => {
     setOverlay(null);
-    // Atualizar contadores ao fechar notificações
     refreshCounts();
   };
 
-  // Overlay de notificações
   if (overlay === 'notifications') {
     return (
       <NotificationsScreen
@@ -87,19 +73,22 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
     );
   }
 
-  const patientHome =
-    activeTab === 'home' && userRole !== 'PROFESSIONAL';
+  /** Fundo claro + status escuro: home paciente, agendamentos paciente, buscar */
+  const safeAreaWhite =
+    (activeTab === 'home' && userRole !== 'PROFESSIONAL') ||
+    (activeTab === 'appointments' && userRole !== 'PROFESSIONAL') ||
+    activeTab === 'search';
 
   return (
     <SafeAreaView
       edges={['left', 'right']}
       style={{
         flex: 1,
-        backgroundColor: patientHome ? '#FFFFFF' : colors.background,
+        backgroundColor: safeAreaWhite ? '#FFFFFF' : colors.background,
       }}
     >
-      <StatusBar barStyle={patientHome ? 'dark-content' : 'light-content'} />
-      
+      <StatusBar barStyle={safeAreaWhite ? 'dark-content' : 'light-content'} />
+
       {activeTab === 'home' && userRole !== 'PROFESSIONAL' && (
         <View style={{ flex: 1 }}>
           <NewHomeScreen
@@ -110,38 +99,64 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
           />
         </View>
       )}
-      {activeTab === 'appointments' && (
-        <MyAppointments 
-          token={token} 
-          userRole={userRole}
-          onNavigateToChat={handleNavigateToChat}
-          onShowNotifications={handleShowNotifications}
-          unreadNotificationsCount={unreadCounts.notifications}
-        />
-      )}
-      {activeTab === 'messages' && (
-        <MessagesScreen 
-          token={token} 
-          initialConversation={initialConversation}
-          onConversationOpened={handleConversationOpened}
-          onShowNotifications={handleShowNotifications}
-          unreadNotificationsCount={unreadCounts.notifications}
-          onConversationsUpdated={refreshCounts}
-        />
-      )}
-      {activeTab === 'profile' && (
-        <ProfileScreen 
-          onLogout={onLogout}
-          onShowNotifications={handleShowNotifications}
-          unreadNotificationsCount={unreadCounts.notifications}
-        />
+
+      {activeTab === 'home' && userRole === 'PROFESSIONAL' && (
+        <View style={{ flex: 1 }}>
+          <MyAppointments
+            token={token}
+            userRole={userRole}
+            onNavigateToChat={handleNavigateToChat}
+            onShowNotifications={handleShowNotifications}
+            unreadNotificationsCount={unreadCounts.notifications}
+          />
+        </View>
       )}
 
-      <BottomNavigation 
-        activeTab={activeTab} 
+      {activeTab === 'search' && (
+        <View style={{ flex: 1 }}>
+          <SearchScreen token={token} onBack={() => {}} showBackButton={false} />
+        </View>
+      )}
+
+      {activeTab === 'appointments' && (
+        <View style={{ flex: 1 }}>
+          <MyAppointments
+            token={token}
+            userRole={userRole}
+            onNavigateToChat={handleNavigateToChat}
+            onShowNotifications={handleShowNotifications}
+            unreadNotificationsCount={unreadCounts.notifications}
+          />
+        </View>
+      )}
+
+      {activeTab === 'messages' && (
+        <View style={{ flex: 1 }}>
+          <MessagesScreen
+            token={token}
+            initialConversation={initialConversation}
+            onConversationOpened={handleConversationOpened}
+            onShowNotifications={handleShowNotifications}
+            unreadNotificationsCount={unreadCounts.notifications}
+            onConversationsUpdated={refreshCounts}
+          />
+        </View>
+      )}
+
+      {activeTab === 'profile' && (
+        <View style={{ flex: 1 }}>
+          <ProfileScreen
+            onLogout={onLogout}
+            onShowNotifications={handleShowNotifications}
+            unreadNotificationsCount={unreadCounts.notifications}
+          />
+        </View>
+      )}
+
+      <BottomNavigation
+        activeTab={activeTab}
         onTabPress={handleTabPress}
         unreadMessagesCount={unreadCounts.messages}
-        userRole={userRole}
       />
     </SafeAreaView>
   );
