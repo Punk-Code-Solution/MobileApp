@@ -7,6 +7,7 @@ import {
   View,
   ActivityIndicator,
   StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -117,7 +118,11 @@ export default function LoginScreen({
                 </TouchableOpacity>
               </View>
             </View>
+            <View >
+                <Image source={require('../../assets/images/negocio4.png')} style={styles.footerImage} />
+              </View>
         </View>
+
       </SafeAreaView>
     </LinearGradient>
   );
@@ -130,15 +135,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  footerImage: {
+    width: '100%',
+    height: 450,
+    opacity: 0.5,
+    bottom: 30,
+  },
   phoneFrame: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 42,
-    borderWidth: 4,
+    borderRadius: 50,
+    borderWidth: 5,
     borderColor: '#0B4A9D',
     overflow: 'hidden',
     flex: 1,
     width: '100%',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     shadowColor: '#002451',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,

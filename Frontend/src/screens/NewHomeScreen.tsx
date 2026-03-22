@@ -9,7 +9,6 @@ import {
   StatusBar,
   TextInput,
   ActivityIndicator,
-  Animated,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +19,6 @@ import ProfessionalDetailsScreen from './ProfessionalDetailsScreen';
 import AppointmentBooking from './AppointmentBooking';
 import SearchScreen from './SearchScreen';
 import { professionalService } from '../services/api/professional.service';
-import { useFadeIn } from '../hooks/useAnimation';
 
 const USER_DATA_KEY = '@telemedicina:userData';
 
@@ -41,7 +39,6 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [userName, setUserName] = useState<string>('Usuário');
-  const fadeOpacity = useFadeIn(400);
 
   // Buscar nome do usuário do AsyncStorage
   useEffect(() => {
@@ -237,8 +234,8 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
         </View>
       </View>
 
-      {/* Conteúdo */}
-      <Animated.View style={{ flex: 1, opacity: fadeOpacity }}>
+      {/* Conteúdo (sem fade-in com opacity 0 — em alguns aparelhos parecia tela preta/vazia) */}
+      <View style={styles.scrollArea}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -315,7 +312,7 @@ export default function NewHomeScreen({ token, onLogout, onShowNotifications, un
           </>
         )}
         </ScrollView>
-      </Animated.View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -324,6 +321,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollArea: {
+    flex: 1,
   },
   header: {
     backgroundColor: colors.primary,

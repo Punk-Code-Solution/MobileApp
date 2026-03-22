@@ -88,6 +88,12 @@ export default function App() {
     loadStoredAuth();
   }, []);
 
+  // Se AsyncStorage travar, não ficar preso na splash indefinidamente
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoadingToken(false), 8000);
+    return () => clearTimeout(t);
+  }, []);
+
   // Função para fazer Login
   const handleLogin = async (email: string, password: string, role: 'PATIENT' | 'PROFESSIONAL') => {
     setLoading(true);

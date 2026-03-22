@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -33,6 +33,13 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
   
   // Buscar contadores de não lidas
   const { unreadCounts, refresh: refreshCounts } = useUnreadCounts(token);
+
+  // Evita área principal vazia: profissionais não têm "home" — se activeTab ficar 'home', corrige
+  useEffect(() => {
+    if (userRole === 'PROFESSIONAL' && activeTab === 'home') {
+      setActiveTab('appointments');
+    }
+  }, [userRole, activeTab]);
 
   const handleTabPress = (tab: TabType) => {
     // Profissionais não podem acessar a aba "home", redirecionar para "appointments"

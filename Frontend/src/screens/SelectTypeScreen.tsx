@@ -75,7 +75,9 @@ export default function SelectTypeScreen({
                 </View>
               </LinearGradient>
             </View>
-
+            <View >
+                <Image source={require('../../assets/images/negocio4.png')} style={styles.footerImage} />
+              </View>
         </View>
 
       </SafeAreaView>
@@ -89,6 +91,12 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  footerImage: {
+    top: 30,
+    width: '100%',
+    height: 450,
+    opacity: 0.5,
   },
   heroImage: {
     width: '100%',
@@ -104,13 +112,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     flex: 1,
     width: '100%',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     shadowColor: '#002451',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
     shadowRadius: 18,
     elevation: 9,
-    marginBottom: 0,
   },
   logoWrap: {
     paddingTop: 36,
@@ -137,9 +144,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   heroBackground: {
-    marginTop: 36,
+    marginTop: 120,
     marginHorizontal: 22,
-    borderRadius: 18,
+    borderRadius: 25,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E5ECF5',
@@ -189,7 +196,12 @@ const styles = StyleSheet.create({
     color: '#1A1A2E',
   },
   roleSelector: {
-    gap: 14,
+    paddingHorizontal: 10,
+    marginTop: 10,
+    gap: 10,
+    borderRadius: 13,
+    marginBottom: 10,
+    
   },
   roleButton: {
     minHeight: 60,

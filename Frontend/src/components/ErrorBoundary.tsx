@@ -45,19 +45,19 @@ export class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#F5F6FA',
     padding: 24,
     justifyContent: 'center',
   },
   title: {
-    color: '#fff',
+    color: '#1A1A2E',
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
   },
   scroll: { paddingBottom: 40 },
   msg: {
-    color: '#e2e8f0',
+    color: '#334155',
     fontSize: 14,
   },
 });

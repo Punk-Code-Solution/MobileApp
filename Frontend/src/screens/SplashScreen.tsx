@@ -15,10 +15,10 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
   useEffect(() => {
-    // Simular carregamento inicial (3 segundos)
+    // Transição rápida — espera longa parecia tela travada/preta
     const timer = setTimeout(() => {
       onFinish();
-    }, 3000);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [onFinish]);

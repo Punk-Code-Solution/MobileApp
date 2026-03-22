@@ -11,9 +11,9 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 function Root() {
   return (
-    <View style={{ flex: 1, backgroundColor: '#0E4EA8' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <ErrorBoundary>
-        <SafeAreaProvider style={{ flex: 1 }}>
+        <SafeAreaProvider style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
           <App />
         </SafeAreaProvider>
       </ErrorBoundary>
