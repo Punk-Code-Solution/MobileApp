@@ -8,15 +8,25 @@ interface BottomNavigationProps {
   activeTab: TabType;
   onTabPress: (tab: TabType) => void;
   unreadMessagesCount?: number;
+  /** Abas e rótulos alinhados ao mockup profissional (Dashboard, Clientes, Agenda). */
+  userRole?: 'PATIENT' | 'PROFESSIONAL';
 }
 
 const NAVY = '#1A4A8E';
 const INACTIVE = '#94A3B8';
 
-const ALL_TABS: { id: TabType; label: string; icon: string }[] = [
+const PATIENT_TABS: { id: TabType; label: string; icon: string }[] = [
   { id: 'home', label: 'Início', icon: '🏠' },
   { id: 'search', label: 'Buscar', icon: '🔍' },
   { id: 'appointments', label: 'Agendamentos', icon: '📅' },
+  { id: 'messages', label: 'Mensagens', icon: '💬' },
+  { id: 'profile', label: 'Perfil', icon: '👤' },
+];
+
+const PROFESSIONAL_TABS: { id: TabType; label: string; icon: string }[] = [
+  { id: 'home', label: 'Dashboard', icon: '📊' },
+  { id: 'search', label: 'Clientes', icon: '👥' },
+  { id: 'appointments', label: 'Agenda', icon: '📅' },
   { id: 'messages', label: 'Mensagens', icon: '💬' },
   { id: 'profile', label: 'Perfil', icon: '👤' },
 ];
@@ -25,11 +35,12 @@ export default function BottomNavigation({
   activeTab,
   onTabPress,
   unreadMessagesCount = 0,
+  userRole = 'PATIENT',
 }: BottomNavigationProps) {
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, Platform.OS === 'ios' ? 8 : 10);
 
-  const tabs = ALL_TABS;
+  const tabs = userRole === 'PROFESSIONAL' ? PROFESSIONAL_TABS : PATIENT_TABS;
 
   return (
     <View

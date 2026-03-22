@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -20,6 +21,16 @@ export default function ProfileOptionsScreen({
   onBack,
 }: ProfileOptionsScreenProps) {
   const [showAbout, setShowAbout] = useState(false);
+
+  const optBackRef = useRef<() => boolean>(() => false);
+  optBackRef.current = () => {
+    if (showAbout) {
+      return false;
+    }
+    onBack();
+    return true;
+  };
+  useHardwareBackPress(() => optBackRef.current());
 
   const handleSettings = () => {
     Alert.alert('Configurações', 'Funcionalidade de configurações será implementada em breve.');

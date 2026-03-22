@@ -68,8 +68,10 @@ export default function AppointmentDetailsModal({
   const isCompletingRef = useRef(false);
   const isSendingMessageRef = useRef(false);
   const doctorName = appointment.professional?.fullName || 'Médico';
+  const patientName = appointment.patient?.fullName || 'Paciente';
   const specialtyName =
     appointment.professional?.specialties?.[0]?.specialty?.name || 'Especialista';
+  const isProfessional = userRole === 'PROFESSIONAL';
   const isCompleted = appointment.status === 'COMPLETED';
   const isCanceled = appointment.status === 'CANCELED';
   const isInProgress = appointment.status === 'IN_PROGRESS';
@@ -139,7 +141,16 @@ export default function AppointmentDetailsModal({
       const professionalAvatar = appointment.professional?.avatarUrl;
       
       if (onSendMessage) {
-        onSendMessage(conversation.id, professionalId, professionalName, professionalAvatar);
+        if (isProfessional) {
+          onSendMessage(
+            conversation.id,
+            appointment.patient?.id || '',
+            patientName,
+            undefined,
+          );
+        } else {
+          onSendMessage(conversation.id, professionalId, professionalName, professionalAvatar);
+        }
         onClose();
       }
     } catch (error: any) {
@@ -153,7 +164,11 @@ export default function AppointmentDetailsModal({
         const professionalAvatar = appointment.professional?.avatarUrl;
         
         if (onSendMessage) {
-          onSendMessage('', professionalId, professionalName, professionalAvatar);
+          if (isProfessional) {
+            onSendMessage('', appointment.patient?.id || '', patientName, undefined);
+          } else {
+            onSendMessage('', professionalId, professionalName, professionalAvatar);
+          }
           onClose();
         }
       } else {
@@ -290,23 +305,35 @@ export default function AppointmentDetailsModal({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Informações do Médico */}
+            {/* Cabeçalho: paciente vê médico; profissional vê paciente */}
             <View style={styles.professionalHeader}>
               <View style={styles.avatarContainer}>
                 <Image
                   source={{
-                    uri:
-                      appointment.professional?.avatarUrl ||
-                      `https://ui-avatars.com/api/?background=90EE90&color=fff&size=128&name=${encodeURIComponent(
-                        doctorName
-                      )}`,
+                    uri: isProfessional
+                      ? `https://ui-avatars.com/api/?background=4C4DDC&color=fff&size=128&name=${encodeURIComponent(
+                          patientName,
+                        )}`
+                      : appointment.professional?.avatarUrl ||
+                        `https://ui-avatars.com/api/?background=90EE90&color=fff&size=128&name=${encodeURIComponent(
+                          doctorName,
+                        )}`,
                   }}
                   style={styles.avatar}
                 />
               </View>
               <View style={styles.professionalInfo}>
-                <Text style={styles.specialty}>{specialtyName}</Text>
-                <Text style={styles.doctorName}>{doctorName}</Text>
+                {isProfessional ? (
+                  <>
+                    <Text style={styles.specialty}>{specialtyName}</Text>
+                    <Text style={styles.doctorName}>{patientName}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.specialty}>{specialtyName}</Text>
+                    <Text style={styles.doctorName}>{doctorName}</Text>
+                  </>
+                )}
                 <View style={styles.dateTimeRow}>
                   <Text style={styles.dateTimeText}>
                     {formatDate(appointment.scheduledAt)}
@@ -323,10 +350,14 @@ export default function AppointmentDetailsModal({
 
             {/* Mensagem de Status */}
             {isCompleted && (
-              <Text style={styles.statusMessage}>Você realizou essa consulta</Text>
+              <Text style={styles.statusMessage}>
+                {isProfessional ? 'Consulta concluída' : 'Você realizou essa consulta'}
+              </Text>
             )}
             {isCanceled && (
-              <Text style={styles.statusMessage}>Você cancelou essa consulta</Text>
+              <Text style={styles.statusMessage}>
+                {isProfessional ? 'Consulta cancelada' : 'Você cancelou essa consulta'}
+              </Text>
             )}
 
             {/* Detalhes da Ação */}
@@ -424,7 +455,9 @@ export default function AppointmentDetailsModal({
       <AlertModal
         visible={cancelConfirmModal}
         title="Cancelar Consulta"
-        message={`Deseja realmente cancelar a consulta com ${doctorName}?`}
+        message={`Deseja realmente cancelar a consulta com ${
+          isProfessional ? patientName : doctorName
+        }?`}
         type="warning"
         confirmText="Sim, Cancelar"
         cancelText="Não"

@@ -3,7 +3,8 @@
  * Margens alinhadas à SelectTypeScreen (PAGE_PAD = 22).
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -23,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Appointment } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
+import { messageService } from '../services/api/message.service';
 import AppointmentDetailsModal from './AppointmentDetailsModal';
 import MedicalHistoryScreen from './MedicalHistoryScreen';
 import RateAppointmentScreen from './RateAppointmentScreen';
@@ -52,6 +54,8 @@ export type FilterModality = 'all' | 'online' | 'presential';
 
 interface AppointmentDetailsProps {
   token: string;
+  /** Paciente: agenda com médico. Profissional: mesma UI com pacientes. */
+  userRole?: 'PATIENT' | 'PROFESSIONAL';
   /** Quando não vier de stack com seta voltar */
   onBack?: () => void;
   onShowNotifications?: () => void;
@@ -110,11 +114,13 @@ function isOnlineAppointment(a: Appointment): boolean {
 
 export default function AppointmentDetails({
   token,
+  userRole = 'PATIENT',
   onBack,
   onShowNotifications,
   unreadNotificationsCount = 0,
   onNavigateToChat,
 }: AppointmentDetailsProps) {
+  const isProfessional = userRole === 'PROFESSIONAL';
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -122,12 +128,38 @@ export default function AppointmentDetails({
   const [locationLabel, setLocationLabel] = useState('Ilhéus - BA');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [filterModality, setFilterModality] = useState<FilterModality>('all');
+  /** Chip rápido: alinha com o rótulo "Confirmado" no card (SCHEDULED + PENDING_PAYMENT). */
+  const [onlyConfirmedLike, setOnlyConfirmedLike] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [tempLocation, setTempLocation] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [ratingAppointment, setRatingAppointment] = useState<Appointment | null>(null);
   const [screenState, setScreenState] = useState<'agenda' | 'history'>('agenda');
+
+  const agendaBackRef = useRef<() => boolean>(() => false);
+  agendaBackRef.current = () => {
+    if (ratingAppointment || screenState === 'history') {
+      return false;
+    }
+    if (loading) {
+      return false;
+    }
+    if (selectedAppointment) {
+      setSelectedAppointment(null);
+      return true;
+    }
+    if (showFilterModal) {
+      setShowFilterModal(false);
+      return true;
+    }
+    if (showLocationModal) {
+      setShowLocationModal(false);
+      return true;
+    }
+    return false;
+  };
+  useHardwareBackPress(() => agendaBackRef.current());
 
   const dateStrip = useMemo(() => {
     const today = startOfDay(new Date());
@@ -180,6 +212,12 @@ export default function AppointmentDetails({
 
     list = list.filter((a) => isSameDay(new Date(a.scheduledAt), selectedDay));
 
+    if (onlyConfirmedLike) {
+      list = list.filter(
+        (a) => a.status === 'SCHEDULED' || a.status === 'PENDING_PAYMENT',
+      );
+    }
+
     if (filterStatus !== 'all') {
       list = list.filter((a) => a.status === filterStatus);
     }
@@ -193,7 +231,7 @@ export default function AppointmentDetails({
     return list.sort(
       (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
     );
-  }, [appointments, selectedDay, filterStatus, filterModality]);
+  }, [appointments, selectedDay, onlyConfirmedLike, filterStatus, filterModality]);
 
   const openLocation = () => {
     setTempLocation(locationLabel);
@@ -217,6 +255,13 @@ export default function AppointmentDetails({
     setShowFilterModal(false);
   };
 
+  const clearAllFilters = () => {
+    setFilterStatus('all');
+    setFilterModality('all');
+    setOnlyConfirmedLike(false);
+    setShowFilterModal(false);
+  };
+
   const openVideo = (a: Appointment) => {
     if (a.videoRoomUrl) {
       Linking.openURL(a.videoRoomUrl).catch(() =>
@@ -225,9 +270,23 @@ export default function AppointmentDetails({
     }
   };
 
-  const openChat = (a: Appointment) => {
+  const openChat = async (a: Appointment) => {
+    if (!onNavigateToChat) {
+      Alert.alert('Indisponível', 'Não foi possível abrir o chat.');
+      return;
+    }
+    if (isProfessional) {
+      try {
+        const conv = await messageService.getOrCreateConversationByAppointment(token, a.id);
+        const name = a.patient?.fullName || 'Paciente';
+        onNavigateToChat(conv.id, name, undefined);
+      } catch {
+        Alert.alert('Erro', 'Não foi possível abrir o chat.');
+      }
+      return;
+    }
     const prof = a.professional;
-    if (!prof?.id || !onNavigateToChat) {
+    if (!prof?.id) {
       Alert.alert('Indisponível', 'Não foi possível abrir o chat.');
       return;
     }
@@ -252,6 +311,7 @@ export default function AppointmentDetails({
     return (
       <MedicalHistoryScreen
         token={token}
+        userRole={userRole}
         onBack={() => setScreenState('agenda')}
         onNavigateToChat={onNavigateToChat}
       />
@@ -351,8 +411,8 @@ export default function AppointmentDetails({
           contentContainerStyle={[styles.chips, { paddingHorizontal: PAGE_PAD }]}
         >
           <TouchableOpacity
-            style={[styles.chip, filterStatus === 'SCHEDULED' && styles.chipOn]}
-            onPress={() => setFilterStatus((s) => (s === 'SCHEDULED' ? 'all' : 'SCHEDULED'))}
+            style={[styles.chip, onlyConfirmedLike && styles.chipOn]}
+            onPress={() => setOnlyConfirmedLike((v) => !v)}
           >
             <Text style={styles.chipTxt}>Só confirmadas</Text>
           </TouchableOpacity>
@@ -384,7 +444,6 @@ export default function AppointmentDetails({
           </View>
         ) : (
           dayAppointments.map((item) => {
-            const doc = item.professional?.fullName || 'Profissional';
             const spec =
               item.professional?.specialties?.[0]?.specialty?.name || 'Consulta';
             const st = statusPatientLabel(item.status);
@@ -392,6 +451,11 @@ export default function AppointmentDetails({
             const modalityLabel = online
               ? 'Atendimento online'
               : 'Atendimento presencial (1h)';
+
+            const mainName = isProfessional
+              ? item.patient?.fullName || 'Paciente'
+              : item.professional?.fullName || 'Profissional';
+            const subLine = `${spec} · ${modalityLabel}`;
 
             return (
               <TouchableOpacity
@@ -403,10 +467,8 @@ export default function AppointmentDetails({
                 <View style={styles.cardInner}>
                   <Text style={styles.time}>{formatTime(item.scheduledAt)}</Text>
                   <View style={styles.cardMid}>
-                    <Text style={styles.pName}>{doc}</Text>
-                    <Text style={styles.pSub}>
-                      {spec} · {modalityLabel}
-                    </Text>
+                    <Text style={styles.pName}>{mainName}</Text>
+                    <Text style={styles.pSub}>{subLine}</Text>
                     <View style={styles.statusRow}>
                       <Text style={styles.check}>{st.ok ? '✓' : '✕'}</Text>
                       <Text style={[styles.stLabel, !st.ok && styles.stOff]}>{st.text}</Text>
@@ -419,9 +481,23 @@ export default function AppointmentDetails({
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
-                        onPress={() =>
-                          Alert.alert('Ligação', 'Telefone do profissional não disponível no app.')
-                        }
+                        onPress={() => {
+                          const phone = isProfessional
+                            ? item.patient?.phone
+                            : undefined;
+                          if (phone) {
+                            Linking.openURL(`tel:${phone.replace(/\D/g, '')}`).catch(() =>
+                              Alert.alert('Erro', 'Não foi possível iniciar a ligação.'),
+                            );
+                          } else {
+                            Alert.alert(
+                              'Ligação',
+                              isProfessional
+                                ? 'Telefone do paciente não disponível no app.'
+                                : 'Telefone do profissional não disponível no app.',
+                            );
+                          }
+                        }}
                         hitSlop={8}
                       >
                         <Text style={styles.actIcon}>📞</Text>
@@ -452,16 +528,20 @@ export default function AppointmentDetails({
         <AppointmentDetailsModal
           appointment={selectedAppointment}
           token={token}
-          userRole="PATIENT"
+          userRole={userRole}
           onClose={() => setSelectedAppointment(null)}
           onCancelSuccess={() => {
             fetchAppointments();
             setSelectedAppointment(null);
           }}
-          onRateAppointment={(apt) => {
-            setRatingAppointment(apt);
-            setTimeout(() => setSelectedAppointment(null), 50);
-          }}
+          onRateAppointment={
+            isProfessional
+              ? undefined
+              : (apt) => {
+                  setRatingAppointment(apt);
+                  setTimeout(() => setSelectedAppointment(null), 50);
+                }
+          }
           onSendMessage={(conversationId, professionalId, professionalName, professionalAvatar) => {
             if (onNavigateToChat) {
               const idToUse = conversationId || professionalId;
@@ -522,14 +602,7 @@ export default function AppointmentDetails({
             >
               <Text style={styles.modalPrimaryTxt}>Aplicar</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalSecondary}
-              onPress={() => {
-                setFilterStatus('all');
-                setFilterModality('all');
-                setShowFilterModal(false);
-              }}
-            >
+            <TouchableOpacity style={styles.modalSecondary} onPress={clearAllFilters}>
               <Text style={styles.modalSecondaryTxt}>Limpar filtros</Text>
             </TouchableOpacity>
           </Pressable>
@@ -715,21 +788,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#EEF2F7',
     marginRight: 8,
     borderWidth: 1,
     borderColor: 'transparent',
+    maxWidth: 220,
   },
   chipOn: {
-    backgroundColor: '#E0E7FF',
+    backgroundColor: '#E8EEF7',
     borderColor: NAVY,
   },
   chipTxt: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#334155',
   },
   sectionTitle: {

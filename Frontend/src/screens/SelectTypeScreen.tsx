@@ -18,7 +18,6 @@ interface SelectTypeScreenProps {
 
 export default function SelectTypeScreen({
   onLogin,
-  onRegister,
   loading = false,
 }: SelectTypeScreenProps) {
   const [userType, setUserType] = useState<'PATIENT' | 'PROFESSIONAL'>('PATIENT');

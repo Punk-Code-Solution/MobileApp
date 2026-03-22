@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import CallScreen from './CallScreen';
 import VideoScreen from './VideoScreen';
 import { messageService } from '../services/api/message.service';
@@ -58,6 +59,17 @@ export default function ChatScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  const chatBackRef = useRef<() => boolean>(() => false);
+  chatBackRef.current = () => {
+    if (screenState === 'call' || screenState === 'video') {
+      setScreenState('chat');
+      return true;
+    }
+    onBack();
+    return true;
+  };
+  useHardwareBackPress(() => chatBackRef.current());
 
   // Buscar mensagens quando o chat é aberto
   const fetchMessages = useCallback(async () => {

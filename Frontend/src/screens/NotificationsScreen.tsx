@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -28,6 +29,13 @@ export default function NotificationsScreen({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const notifBackRef = useRef(onBack);
+  notifBackRef.current = onBack;
+  useHardwareBackPress(() => {
+    notifBackRef.current();
+    return true;
+  });
 
   useEffect(() => {
     fetchNotifications();

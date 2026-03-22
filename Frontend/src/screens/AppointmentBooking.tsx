@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -15,8 +16,13 @@ import { colors } from '../theme/colors';
 import { Professional, CreateAppointmentDto } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
 import { isTokenValid } from '../utils/token.util';
+import { getApiErrorMessage } from '../utils/apiError';
 import { useToast } from '../hooks/useToast';
 import AlertModal from '../components/AlertModal';
+
+/** Mesmos tokens visuais da NewHomeScreen (categorias + chips de filtro) */
+const PAGE_PAD = 22;
+const NAVY = '#1A4A8E';
 
 interface AppointmentBookingProps {
   professional: Professional;
@@ -75,6 +81,29 @@ const formatMonth = (date: Date): string => {
   return (date.getMonth() + 1).toString();
 };
 
+/** Primeiro dia da lista (hoje), meia-noite local — igual a `generateNextDays()[0]`. */
+const getInitialSelectedDate = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+/** Horário ainda não permitido pelo backend (mín. 2h à frente do relógio local). */
+const isTimeSlotAllowed = (day: Date, timeSlot: string): boolean => {
+  const [hours, minutes] = timeSlot.split(':').map(Number);
+  const slotStart = new Date(
+    day.getFullYear(),
+    day.getMonth(),
+    day.getDate(),
+    hours,
+    minutes,
+    0,
+    0,
+  );
+  const minTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+  return slotStart.getTime() >= minTime.getTime();
+};
+
 export default function AppointmentBooking({
   professional,
   token,
@@ -82,7 +111,8 @@ export default function AppointmentBooking({
   onCancel,
 }: AppointmentBookingProps) {
   // Ref para prevenir múltiplos cliques simultâneos
-  const isSubmittingRef = useRef(false);const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const isSubmittingRef = useRef(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => getInitialSelectedDate());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [alertModal, setAlertModal] = useState<{
@@ -100,12 +130,26 @@ export default function AppointmentBooking({
   });
   const isMountedRef = useRef(true);
   const { showToast } = useToast();
-  
+
+  const bookingBackRef = useRef(onCancel);
+  bookingBackRef.current = onCancel;
+  useHardwareBackPress(() => {
+    bookingBackRef.current();
+    return true;
+  });
+
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!selectedDate || !selectedTime) return;
+    if (!isTimeSlotAllowed(selectedDate, selectedTime)) {
+      setSelectedTime(null);
+    }
+  }, [selectedDate]);
   
   const availableDays = generateNextDays();
   const specialtyName = professional.specialties?.[0]?.specialty?.name || 'Especialista';
@@ -122,21 +166,20 @@ export default function AppointmentBooking({
 
     if (!selectedDate || !selectedTime) {
       showToast('Por favor, selecione uma data e um horário', 'warning');
+      isSubmittingRef.current = false;
       return;
     }
 
-    // Criar nova data baseada na data selecionada, mas com o horário escolhido
+    // Data/hora no fuso local do aparelho → toISOString() envia o instante correto ao backend
     const [hours, minutes] = selectedTime.split(':').map(Number);
     const appointmentDateTime = new Date(
-      Date.UTC(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate(),
-        hours,
-        minutes,
-        0,
-        0
-      )
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      hours,
+      minutes,
+      0,
+      0,
     );
     
     const now = new Date();
@@ -144,12 +187,14 @@ export default function AppointmentBooking({
     
     if (appointmentDateTime < minTime) {
       showToast('Por favor, selecione um horário com pelo menos 2 horas de antecedência', 'warning');
+      isSubmittingRef.current = false;
       return;
     }
 
     // Validar professionalId
     if (!professional.id || typeof professional.id !== 'string') {
       showToast('ID do profissional inválido. Tente novamente.', 'error');
+      isSubmittingRef.current = false;
       return;
     }
 
@@ -162,6 +207,7 @@ export default function AppointmentBooking({
         type: 'warning',
         onConfirm: () => setAlertModal((prev) => ({ ...prev, visible: false })),
       });
+      isSubmittingRef.current = false;
       return;
     }
 
@@ -305,33 +351,18 @@ export default function AppointmentBooking({
         return;
       }
       
-      // Extrair mensagem de erro de forma mais robusta
-      let errorMessage = 'Não foi possível agendar a consulta. Tente novamente.';
+      // Extrair mensagem (Nest: { statusCode, message: string | string[], path })
+      let errorMessage = getApiErrorMessage(
+        error,
+        'Não foi possível agendar a consulta. Tente novamente.',
+      );
       
       try {
         const statusCode = error.response?.status;
         
-        // Tratar diferentes tipos de erro
         if (statusCode === 400) {
-          // Bad Request - erro de validação
-          const errorData = error.response.data;
-          
-          // Tentar extrair mensagem de diferentes formatos
-          if (errorData?.data?.message) {
-            errorMessage = errorData.data.message;
-          } else if (errorData?.message) {
-            errorMessage = errorData.message;
-          } else if (errorData?.data?.error) {
-            errorMessage = errorData.data.error;
-          } else if (errorData?.error) {
-            errorMessage = errorData.error;
-          } else if (Array.isArray(errorData?.message)) {
-            // Se for array de mensagens de validação
-            errorMessage = errorData.message.join(', ');
-          } else if (typeof errorData === 'string') {
-            errorMessage = errorData;
-          } else {
-            errorMessage = 'Dados inválidos. Verifique a data e horário selecionados.';
+          if (!errorMessage || errorMessage === 'Request failed with status code 400') {
+            errorMessage = 'Dados inválidos. Verifique a data e o horário selecionados.';
           }
         } else if (statusCode === 401) {
           // Não mostrar alert para 401, o interceptor do axios já vai fazer logout
@@ -342,15 +373,15 @@ export default function AppointmentBooking({
           }
           return; // Sair sem mostrar alert, o logout automático vai tratar
         } else if (statusCode === 403) {
-          // Verificar se é erro de perfil não encontrado
-          const errorData = error.response.data;
-          const message = errorData?.message || '';
-          
-          if (message.includes('Perfil de paciente não encontrado') || 
-              message.includes('complete seu cadastro')) {
-            errorMessage = 'Perfil de paciente não encontrado. Por favor, complete seu cadastro antes de agendar consultas.';
+          const message = getApiErrorMessage(error, '');
+          if (
+            message.includes('Perfil de paciente não encontrado') ||
+            message.includes('complete seu cadastro')
+          ) {
+            errorMessage =
+              'Perfil de paciente não encontrado. Por favor, complete seu cadastro antes de agendar consultas.';
           } else {
-            errorMessage = 'Você não tem permissão para realizar esta ação.';
+            errorMessage = message || 'Você não tem permissão para realizar esta ação.';
           }
         } else if (statusCode === 404) {
           errorMessage = 'Profissional não encontrado.';
@@ -418,7 +449,7 @@ export default function AppointmentBooking({
       >
 
         {/* Card do Profissional */}
-        <View style={styles.professionalCard}>
+        <View style={[styles.professionalCard, { marginHorizontal: PAGE_PAD }]}>
           <View style={styles.professionalInfo}>
             <View style={styles.avatarContainer}>
               <Image
@@ -448,7 +479,7 @@ export default function AppointmentBooking({
 
         {/* Seção de Seleção de Data */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Selecione a Data</Text>
+          <Text style={[styles.sectionTitle, { paddingHorizontal: PAGE_PAD }]}>Selecione a Data</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -500,10 +531,11 @@ export default function AppointmentBooking({
         {/* Seção de Seleção de Horário */}
         {selectedDate && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Selecione o Horário</Text>
+            <Text style={[styles.sectionTitle, { paddingHorizontal: PAGE_PAD }]}>Selecione o Horário</Text>
             <View style={styles.timeGrid}>
               {TIME_SLOTS.map((time) => {
                 const isSelected = isTimeSelected(time);
+                const allowed = selectedDate ? isTimeSlotAllowed(selectedDate, time) : false;
                 
                 return (
                   <TouchableOpacity
@@ -511,13 +543,25 @@ export default function AppointmentBooking({
                     style={[
                       styles.timeSlot,
                       isSelected && styles.timeSlotSelected,
+                      !allowed && styles.timeSlotDisabled,
                     ]}
-                    onPress={() => setSelectedTime(time)}
+                    disabled={!allowed}
+                    onPress={() => {
+                      if (!allowed) {
+                        showToast(
+                          'Escolha um horário com pelo menos 2 horas de antecedência.',
+                          'warning',
+                        );
+                        return;
+                      }
+                      setSelectedTime(time);
+                    }}
                   >
                     <Text
                       style={[
                         styles.timeSlotText,
                         isSelected && styles.timeSlotTextSelected,
+                        !allowed && styles.timeSlotTextDisabled,
                       ]}
                     >
                       {time}
@@ -615,7 +659,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 24,
-    marginHorizontal: 24,
     marginTop: 16,
     marginBottom: 24,
     elevation: 4,
@@ -677,109 +720,114 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: 16,
-    paddingHorizontal: 24,
+    fontSize: 13,
+    fontWeight: '700',
+    color: NAVY,
+    marginBottom: 10,
   },
 
-  // Seleção de Data
+  // Seleção de Data — mesmo bloco visual das categorias rápidas (quickCat) da home
   datesContainer: {
-    paddingHorizontal: 24,
-    paddingRight: 24,
+    paddingHorizontal: PAGE_PAD,
+    gap: 10,
+    paddingBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'stretch',
   },
   dateCard: {
-    width: 75,
-    height: 95,
-    backgroundColor: colors.surface,
-    borderRadius: 20,
+    width: 76,
+    minHeight: 88,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5EAF2',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: colors.border,
-    elevation: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    marginRight: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 3,
+    elevation: 2,
   },
   dateCardSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    elevation: 6,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    borderColor: NAVY,
+    backgroundColor: '#F0F4FF',
   },
   dateWeekday: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: colors.text.secondary,
+    color: '#334155',
     marginBottom: 4,
+    textAlign: 'center',
   },
   dateWeekdaySelected: {
-    color: colors.text.light,
+    color: NAVY,
   },
   dateNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#334155',
     marginBottom: 2,
   },
   dateNumberSelected: {
-    color: colors.text.light,
+    color: NAVY,
   },
   dateMonth: {
-    fontSize: 12,
-    color: colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    textAlign: 'center',
   },
   dateMonthSelected: {
-    color: colors.text.light,
+    color: NAVY,
   },
 
-  // Seleção de Horário
+  // Seleção de Horário — mesmo estilo dos chips de filtro (chip / chipOn) da home
   timeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 24,
-    gap: 12,
+    paddingHorizontal: PAGE_PAD,
+    paddingVertical: 12,
+    gap: 8,
+    alignItems: 'center',
   },
   timeSlot: {
-    minWidth: 95,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.border,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    minWidth: 88,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    marginBottom: 0,
+    marginRight: 0,
+    maxWidth: 220,
   },
   timeSlotSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    elevation: 4,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    backgroundColor: '#E8EEF7',
+    borderColor: NAVY,
   },
   timeSlotText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: '#334155',
   },
   timeSlotTextSelected: {
-    color: colors.text.light,
+    color: '#334155',
+  },
+  timeSlotDisabled: {
+    opacity: 0.38,
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E5EAF2',
+  },
+  timeSlotTextDisabled: {
+    color: '#94a3b8',
   },
 
   // Resumo
@@ -828,7 +876,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.background,
-    paddingHorizontal: 24,
+    paddingHorizontal: PAGE_PAD,
     paddingTop: 16,
     paddingBottom: 20,
     borderTopWidth: 1,

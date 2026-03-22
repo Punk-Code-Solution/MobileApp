@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -24,6 +25,20 @@ export default function ProfileScreen({ onLogout, onShowNotifications, unreadNot
   const [screenState, setScreenState] = useState<ScreenState>('profile');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const userName = 'Usuário';
+
+  const profileBackRef = useRef<() => boolean>(() => false);
+  profileBackRef.current = () => {
+    if (showLogoutConfirm) {
+      setShowLogoutConfirm(false);
+      return true;
+    }
+    if (screenState === 'options') {
+      setScreenState('profile');
+      return true;
+    }
+    return false;
+  };
+  useHardwareBackPress(() => profileBackRef.current());
 
   const handleLogout = () => {
     setShowLogoutConfirm(false);

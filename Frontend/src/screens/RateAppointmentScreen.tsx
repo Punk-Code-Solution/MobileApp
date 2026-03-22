@@ -15,6 +15,7 @@ import { colors } from '../theme/colors';
 import { Appointment } from '../types/appointment.types';
 import { appointmentService } from '../services/api/appointment.service';
 import { useToast } from '../hooks/useToast';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import AlertModal from '../components/AlertModal';
 
 interface RateAppointmentScreenProps {
@@ -35,6 +36,13 @@ export default function RateAppointmentScreen({
   const [loading, setLoading] = useState(false);
   const [successModal, setSuccessModal] = useState(false);
   const { showToast } = useToast();
+
+  const rateBackRef = useRef(onBack);
+  rateBackRef.current = onBack;
+  useHardwareBackPress(() => {
+    rateBackRef.current();
+    return true;
+  });
 
   const professionalName = appointment.professional?.fullName || 'Profissional';
   const specialtyName =

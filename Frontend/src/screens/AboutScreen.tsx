@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -16,6 +17,13 @@ interface AboutScreenProps {
 
 export default function AboutScreen({ onBack }: AboutScreenProps) {
   const currentYear = new Date().getFullYear();
+
+  const aboutBackRef = useRef(onBack);
+  aboutBackRef.current = onBack;
+  useHardwareBackPress(() => {
+    aboutBackRef.current();
+    return true;
+  });
 
   return (
     <SafeAreaView edges={['left', 'right']} style={styles.container}>
@@ -46,7 +54,7 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
           <View style={styles.logoCircle}>
             <Text style={styles.logoText}>🏥</Text>
           </View>
-          <Text style={styles.appName}>Telemedicina</Text>
+          <Text style={styles.appName}>Pronto</Text>
           <Text style={styles.appVersion}>Versão 1.0.0</Text>
         </View>
 
@@ -88,9 +96,8 @@ export default function AboutScreen({ onBack }: AboutScreenProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Sobre o Aplicativo</Text>
           <Text style={styles.descriptionText}>
-            Aplicativo de telemedicina desenvolvido para facilitar o acesso a
-            consultas médicas online, conectando pacientes e profissionais de
-            saúde de forma segura e eficiente.
+            Aplicativo Pronto desenvolvido para facilitar o acesso a
+            consultas a diversos profissionais, conectando clientes e profissionais de forma rápida e eficiente.
           </Text>
         </View>
       </ScrollView>

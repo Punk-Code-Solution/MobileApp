@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -16,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '../theme/colors';
 import { Professional } from '../types/appointment.types';
 import ProfessionalDetailsScreen from './ProfessionalDetailsScreen';
 import AppointmentBooking from './AppointmentBooking';
@@ -115,10 +115,6 @@ export default function NewHomeScreen({
     loadUserName();
   }, []);
 
-  useEffect(() => {
-    fetchDoctors();
-  }, [fetchDoctors]);
-
   const fetchDoctors = useCallback(async () => {
     try {
       const doctorsData = await professionalService.getAll(token);
@@ -132,6 +128,10 @@ export default function NewHomeScreen({
       setRefreshing(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    fetchDoctors();
+  }, [fetchDoctors]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -257,6 +257,27 @@ export default function NewHomeScreen({
     }
     setShowFiltersModal(false);
   };
+
+  const newHomeBackRef = useRef<() => boolean>(() => false);
+  newHomeBackRef.current = () => {
+    if (screenState !== 'home') {
+      return false;
+    }
+    if (showPaymentModal) {
+      setShowPaymentModal(false);
+      return true;
+    }
+    if (showFiltersModal) {
+      setShowFiltersModal(false);
+      return true;
+    }
+    if (showLocationModal) {
+      setShowLocationModal(false);
+      return true;
+    }
+    return false;
+  };
+  useHardwareBackPress(() => newHomeBackRef.current());
 
   if (screenState === 'search') {
     return (
@@ -877,8 +898,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 12,
-    marginRight: 12,
-    backgroundColor: '#E8EEF7',
+    marginRight: 12
   },
   cardBody: {
     flex: 1,

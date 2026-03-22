@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -93,6 +94,20 @@ export default function SearchScreen({
     setScreenState('search');
     setSelectedProfessional(null);
   };
+
+  const searchBackRef = useRef<() => boolean>(() => false);
+  searchBackRef.current = () => {
+    if (screenState === 'details' && selectedProfessional) {
+      handleBackToSearch();
+      return true;
+    }
+    if (showBackButton) {
+      onBack();
+      return true;
+    }
+    return false;
+  };
+  useHardwareBackPress(() => searchBackRef.current());
 
   // Tela de detalhes
   if (screenState === 'details' && selectedProfessional) {

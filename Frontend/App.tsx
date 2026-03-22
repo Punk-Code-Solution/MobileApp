@@ -10,13 +10,13 @@
  * Licenciado sob os termos da licença MIT.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
+import { useHardwareBackPress } from './src/hooks/useHardwareBackPress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from './src/services/api/auth.service';
 import { isTokenValid } from './src/utils/token.util';
 import { ToastProvider } from './src/hooks/useToast';
-import SplashScreen from './src/screens/SplashScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import SelectTypeScreen from './src/screens/SelectTypeScreen';
 import LoginScreen from './src/screens/LoginScreen';
@@ -45,16 +45,14 @@ export const getGlobalLogoutCallback = (): (() => Promise<void>) | null => {
 };
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>('selectType');
   const [selectedUserType, setSelectedUserType] = useState<'PATIENT' | 'PROFESSIONAL'>('PATIENT');
   const [registerEmail, setRegisterEmail] = useState('');
-  const [isLoadingToken, setIsLoadingToken] = useState(true);
 
-  // Recuperar token e dados do usuário ao iniciar o app
+  // Recuperar token e dados do usuário ao iniciar o app (sem splash — primeira tela já é SelectType)
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
@@ -80,18 +78,10 @@ export default function App() {
         }
       } catch (error) {
         console.error('Erro ao recuperar token do AsyncStorage:', error);
-      } finally {
-        setIsLoadingToken(false);
       }
     };
 
     loadStoredAuth();
-  }, []);
-
-  // Se AsyncStorage travar, não ficar preso na splash indefinidamente
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoadingToken(false), 8000);
-    return () => clearTimeout(t);
   }, []);
 
   // Função para fazer Login
@@ -176,10 +166,43 @@ export default function App() {
     };
   }, []);
 
-  // Se ainda está mostrando splash ou carregando token, exibir splash screen
-  if (showSplash || isLoadingToken) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
+  const androidAuthBackRef = useRef<() => boolean>(() => false);
+  androidAuthBackRef.current = () => {
+    if (token && userData?.hasCompleteProfile !== false && currentScreen !== 'completePatientProfile') {
+      return false;
+    }
+    if (token && currentScreen === 'completePatientProfile') {
+      return false;
+    }
+    switch (currentScreen) {
+      case 'selectType':
+        return false;
+      case 'login':
+        setCurrentScreen('selectType');
+        return true;
+      case 'register':
+        setCurrentScreen('selectType');
+        return true;
+      case 'emailVerification':
+        setCurrentScreen('login');
+        return true;
+      case 'emailVerificationSuccess':
+        setCurrentScreen('login');
+        return true;
+      case 'forgotPassword':
+        setCurrentScreen('login');
+        return true;
+      case 'resetPassword':
+        setCurrentScreen('login');
+        return true;
+      case 'resetSuccess':
+        setCurrentScreen('login');
+        return true;
+      default:
+        return false;
+    }
+  };
+  useHardwareBackPress(() => androidAuthBackRef.current());
 
   // Navegação entre telas de autenticação
   const handleForgotPassword = () => {

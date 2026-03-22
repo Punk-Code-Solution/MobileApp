@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -42,6 +43,13 @@ export default function ProfessionalDetailsScreen({
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [token, setToken] = useState<string | null>(null);
+
+  const detailsBackRef = useRef(onBack);
+  detailsBackRef.current = onBack;
+  useHardwareBackPress(() => {
+    detailsBackRef.current();
+    return true;
+  });
 
   useEffect(() => {
     const loadToken = async () => {

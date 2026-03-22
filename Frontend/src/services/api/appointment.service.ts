@@ -97,7 +97,14 @@ export const appointmentService = {
       
       return appointment as Appointment;
     } catch (error: any) {
-      console.error('[APPOINTMENT-SERVICE] Erro ao criar agendamento:', error?.message || error);
+      const status = error?.response?.status;
+      const body = error?.response?.data;
+      console.error(
+        '[APPOINTMENT-SERVICE] Erro ao criar agendamento:',
+        error?.message || error,
+        status != null ? `(HTTP ${status})` : '',
+        body != null ? JSON.stringify(body) : '',
+      );
       throw error;
     }
   },

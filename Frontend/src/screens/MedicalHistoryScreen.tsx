@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import {
   View,
   Text,
@@ -19,6 +20,7 @@ import AppointmentDetailsModal from './AppointmentDetailsModal';
 
 interface MedicalHistoryScreenProps {
   token: string;
+  userRole?: 'PATIENT' | 'PROFESSIONAL';
   onBack: () => void;
   onNavigateToChat?: (conversationIdOrProfessionalId: string, professionalName: string, professionalAvatar?: string) => void;
 }
@@ -53,6 +55,7 @@ const formatFullDate = (dateString: string): string => {
 
 export default function MedicalHistoryScreen({
   token,
+  userRole = 'PATIENT',
   onBack,
   onNavigateToChat,
 }: MedicalHistoryScreenProps) {
@@ -60,6 +63,17 @@ export default function MedicalHistoryScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+
+  const medBackRef = useRef<() => boolean>(() => false);
+  medBackRef.current = () => {
+    if (selectedAppointment) {
+      setSelectedAppointment(null);
+      return true;
+    }
+    onBack();
+    return true;
+  };
+  useHardwareBackPress(() => medBackRef.current());
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -117,7 +131,10 @@ export default function MedicalHistoryScreen({
 
   const renderAppointmentCard = ({ item }: { item: Appointment }) => {
     const doctorName = item.professional?.fullName || 'Médico';
+    const patientName = item.patient?.fullName || 'Paciente';
     const specialtyName = item.professional?.specialties?.[0]?.specialty?.name || 'Especialista';
+    const isProf = userRole === 'PROFESSIONAL';
+    const displayName = isProf ? patientName : doctorName;
     const statusLabel =
       item.status === 'COMPLETED'
         ? 'Realizado'
@@ -141,18 +158,21 @@ export default function MedicalHistoryScreen({
           <View style={styles.avatarContainer}>
             <Image
               source={{
-                uri:
-                  item.professional?.avatarUrl ||
-                  `https://ui-avatars.com/api/?background=90EE90&color=fff&size=128&name=${encodeURIComponent(
-                    doctorName
-                  )}`,
+                uri: isProf
+                  ? `https://ui-avatars.com/api/?background=4C4DDC&color=fff&size=128&name=${encodeURIComponent(
+                      patientName,
+                    )}`
+                  : item.professional?.avatarUrl ||
+                    `https://ui-avatars.com/api/?background=90EE90&color=fff&size=128&name=${encodeURIComponent(
+                        doctorName,
+                      )}`,
               }}
               style={styles.avatar}
             />
           </View>
           <View style={styles.cardHeaderContent}>
             <Text style={styles.specialty}>{specialtyName}</Text>
-            <Text style={styles.doctorName}>{doctorName}</Text>
+            <Text style={styles.doctorName}>{displayName}</Text>
             <Text style={styles.fullDate}>{formatFullDate(item.scheduledAt)}</Text>
             <Text style={styles.time}>{formatTime(item.scheduledAt)}</Text>
           </View>
@@ -212,7 +232,9 @@ export default function MedicalHistoryScreen({
             <Text style={styles.emptyIcon}>📋</Text>
             <Text style={styles.emptyTitle}>Nenhum histórico encontrado</Text>
             <Text style={styles.emptyText}>
-              Suas consultas anteriores aparecerão aqui quando forem finalizadas.
+              {userRole === 'PROFESSIONAL'
+                ? 'As consultas finalizadas com seus pacientes aparecerão aqui.'
+                : 'Suas consultas anteriores aparecerão aqui quando forem finalizadas.'}
             </Text>
           </View>
         ) : (
@@ -242,6 +264,7 @@ export default function MedicalHistoryScreen({
         <AppointmentDetailsModal
           appointment={selectedAppointment}
           token={token}
+          userRole={userRole}
           onClose={() => setSelectedAppointment(null)}
           onCancelSuccess={() => {
             fetchAppointments();
@@ -249,7 +272,6 @@ export default function MedicalHistoryScreen({
           }}
           onSendMessage={(conversationId, professionalId, professionalName, professionalAvatar) => {
             if (onNavigateToChat) {
-              // Se tiver conversationId, usar ele; senão usar professionalId (fallback)
               const idToUse = conversationId || professionalId;
               onNavigateToChat(idToUse, professionalName, professionalAvatar);
             }

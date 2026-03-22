@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { StatusBar, View } from 'react-native';
+import { useHardwareBackPress } from '../hooks/useHardwareBackPress';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import NewHomeScreen from './NewHomeScreen';
 import SearchScreen from './SearchScreen';
 import MyAppointments from './MyAppointments';
+import ProfessionalDashboardScreen from './ProfessionalDashboardScreen';
+import ProfessionalClientsScreen from './ProfessionalClientsScreen';
 import MessagesScreen from './MessagesScreen';
 import ProfileScreen from './ProfileScreen';
 import NotificationsScreen from './NotificationsScreen';
@@ -30,6 +33,21 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
   } | null>(null);
 
   const { unreadCounts, refresh: refreshCounts } = useUnreadCounts(token);
+
+  const homeBackRef = useRef<() => boolean>(() => false);
+  homeBackRef.current = () => {
+    if (overlay === 'notifications') {
+      setOverlay(null);
+      refreshCounts();
+      return true;
+    }
+    if (activeTab !== 'home') {
+      setActiveTab('home');
+      return true;
+    }
+    return false;
+  };
+  useHardwareBackPress(() => homeBackRef.current());
 
   const handleTabPress = (tab: TabType) => {
     setActiveTab(tab);
@@ -73,11 +91,12 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
     );
   }
 
-  /** Fundo claro + status escuro: home paciente, agendamentos paciente, buscar */
+  /** Fundo claro + status escuro (agenda paciente e profissional usam o mesmo layout claro). */
   const safeAreaWhite =
     (activeTab === 'home' && userRole !== 'PROFESSIONAL') ||
-    (activeTab === 'appointments' && userRole !== 'PROFESSIONAL') ||
-    activeTab === 'search';
+    activeTab === 'appointments' ||
+    activeTab === 'search' ||
+    (userRole === 'PROFESSIONAL' && activeTab === 'home');
 
   return (
     <SafeAreaView
@@ -102,17 +121,25 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
 
       {activeTab === 'home' && userRole === 'PROFESSIONAL' && (
         <View style={{ flex: 1 }}>
-          <MyAppointments
+          <ProfessionalDashboardScreen
             token={token}
-            userRole={userRole}
-            onNavigateToChat={handleNavigateToChat}
             onShowNotifications={handleShowNotifications}
             unreadNotificationsCount={unreadCounts.notifications}
           />
         </View>
       )}
 
-      {activeTab === 'search' && (
+      {activeTab === 'search' && userRole === 'PROFESSIONAL' && (
+        <View style={{ flex: 1 }}>
+          <ProfessionalClientsScreen
+            token={token}
+            onShowNotifications={handleShowNotifications}
+            unreadNotificationsCount={unreadCounts.notifications}
+          />
+        </View>
+      )}
+
+      {activeTab === 'search' && userRole !== 'PROFESSIONAL' && (
         <View style={{ flex: 1 }}>
           <SearchScreen token={token} onBack={() => {}} showBackButton={false} />
         </View>
@@ -157,6 +184,7 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
         activeTab={activeTab}
         onTabPress={handleTabPress}
         unreadMessagesCount={unreadCounts.messages}
+        userRole={userRole}
       />
     </SafeAreaView>
   );
