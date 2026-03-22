@@ -10,8 +10,6 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
-import { colors } from '../theme/colors';
 import { useToast } from '../hooks/useToast';
 
 interface LoginScreenProps {
@@ -45,24 +43,22 @@ export default function LoginScreen({
   };
 
   return (
-    <LinearGradient
-      colors={['#0E4EA8', '#EAF1F8']}
-      style={styles.gradient}
-    >
-      <SafeAreaView edges={['left', 'right']} style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.phoneFrame}>
-            <View style={styles.logoWrap}>
-              <Text style={styles.logoText}>Pronto</Text>
-              <View style={styles.logoDivider} />
-              <Text style={styles.tagline}>Conectando clientes e profissionais</Text>
-              <TouchableOpacity onPress={onBackToSelectType}>
-                <Text style={styles.changeTypeLink}>
-                  Entrando como {selectedUserType === 'PATIENT' ? 'Cliente' : 'Profissional'} - alterar
-                </Text>
-              </TouchableOpacity>
-            </View>
+    <View style={styles.root}>
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.contentColumn}>
+          <View style={styles.logoWrap}>
+            <Text style={styles.logoText}>Pronto</Text>
+            <View style={styles.logoDivider} />
+            <Text style={styles.tagline}>Conectando clientes e profissionais</Text>
+            <TouchableOpacity onPress={onBackToSelectType}>
+              <Text style={styles.changeTypeLink}>
+                Entrando como {selectedUserType === 'PATIENT' ? 'Cliente' : 'Profissional'} - alterar
+              </Text>
+            </TouchableOpacity>
+          </View>
 
+          <View style={styles.formCenterWrap}>
             <View style={styles.formCard}>
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>
@@ -118,47 +114,55 @@ export default function LoginScreen({
                 </TouchableOpacity>
               </View>
             </View>
-            <View >
-                <Image source={require('../../assets/images/negocio4.png')} style={styles.footerImage} />
-              </View>
-        </View>
+          </View>
 
+          <View style={styles.footerWrap}>
+            <Image
+              source={require('../../assets/images/negocio4.png')}
+              style={styles.footerImage}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: {
+  root: {
     flex: 1,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
   },
-  container: {
+  safeArea: {
     flex: 1,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  contentColumn: {
+    flex: 1,
+    width: '100%',
+  },
+  formCenterWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 1,
+  },
+  footerWrap: {
+    width: '100%',
+    overflow: 'hidden',
   },
   footerImage: {
     width: '100%',
-    height: 450,
+    height: 350,
     opacity: 0.5,
-    bottom: 30,
-  },
-  phoneFrame: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 50,
-    borderWidth: 5,
-    borderColor: '#0B4A9D',
-    overflow: 'hidden',
-    flex: 1,
-    width: '100%',
-    justifyContent: 'flex-start',
-    shadowColor: '#002451',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 9,
   },
   logoWrap: {
-    paddingTop: 36,
+    paddingTop: 16,
     paddingHorizontal: 20,
+    paddingBottom: 8,
     alignItems: 'center',
   },
   logoText: {
@@ -185,18 +189,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#0A56B7',
-  },
-  heroBackground: {
-    marginTop: 22,
-    marginHorizontal: 22,
-    borderRadius: 18,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E5ECF5',
-  },
-  heroOverlay: {
-    paddingVertical: 26,
-    paddingHorizontal: 16,
   },
   inputContainer: {
     marginBottom: 16,
@@ -227,58 +219,14 @@ const styles = StyleSheet.create({
     borderColor: '#D2DFEE',
     paddingHorizontal: 14,
   },
-  icon: {
-    fontSize: 18,
-    color: '#2E5E9A',
-    marginRight: 10,
-  },
   input: {
     flex: 1,
     paddingVertical: 14,
     fontSize: 15,
     color: '#1A1A2E',
   },
-  roleSelector: {
-    gap: 14,
-  },
-  roleButton: {
-    minHeight: 60,
-    borderRadius: 13,
-    borderWidth: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  roleButtonFilled: {
-    backgroundColor: '#0254B6',
-    borderColor: '#0254B6',
-  },
-  roleButtonOutline: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#0A56B7',
-  },
-  roleButtonActive: {
-    backgroundColor: '#01479B',
-    borderColor: '#01479B',
-  },
-  roleButtonActiveOutline: {
-    backgroundColor: '#E9F2FF',
-  },
-  roleButtonTextFilled: {
-    fontSize: 33 / 2,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  roleButtonTextOutline: {
-    fontSize: 33 / 2,
-    fontWeight: '700',
-    color: '#0A56B7',
-  },
   formCard: {
-    marginTop: 14,
-    marginHorizontal: 20,
-    marginBottom: 12,
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,

@@ -32,16 +32,17 @@ export default function SelectTypeScreen({
   };
 
   return (
-    <LinearGradient colors={['#0E4EA8', '#EAF1F8']} style={styles.gradient}>
-      <SafeAreaView edges={['left', 'right']} style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.phoneFrame}>
-            <View style={styles.logoWrap}>
-              <Text style={styles.logoText}>Pronto</Text>
-              <View style={styles.logoDivider} />
-              <Text style={styles.tagline}>Conectando clientes e profissionais</Text>
-            </View>
+    <View style={styles.root}>
+      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.contentColumn}>
+          <View style={styles.logoWrap}>
+            <Text style={styles.logoText}>Pronto</Text>
+            <View style={styles.logoDivider} />
+            <Text style={styles.tagline}>Conectando clientes e profissionais</Text>
+          </View>
 
+          <View style={styles.heroCenterWrap}>
             <View style={styles.heroBackground}>
               <LinearGradient
                 colors={['rgba(255,255,255,0.78)', 'rgba(255,255,255,0.92)']}
@@ -75,53 +76,56 @@ export default function SelectTypeScreen({
                 </View>
               </LinearGradient>
             </View>
-            <View >
-                <Image source={require('../../assets/images/negocio4.png')} style={styles.footerImage} />
-              </View>
-        </View>
+          </View>
 
+          <View style={styles.footerWrap}>
+            <Image
+              source={require('../../assets/images/negocio4.png')}
+              style={styles.footerImage}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: {
+  /** Ocupa 100% da janela — evita faixas laterais/superiores do gradiente em aparelhos reais */
+  root: {
     flex: 1,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
   },
-  container: {
+  safeArea: {
     flex: 1,
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  contentColumn: {
+    flex: 1,
+    width: '100%',
+  },
+  heroCenterWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 1,
+  },
+  footerWrap: {
+    width: '100%',
+    overflow: 'hidden',
   },
   footerImage: {
-    top: 30,
     width: '100%',
-    height: 450,
+    height: 350,
     opacity: 0.5,
   },
-  heroImage: {
-    width: '100%',
-    height: 200,
-    opacity: 0.85,
-    marginBottom: 16,
-  },
-  phoneFrame: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 50,
-    borderWidth: 5,
-    borderColor: '#0B4A9D',
-    overflow: 'hidden',
-    flex: 1,
-    width: '100%',
-    justifyContent: 'flex-start',
-    shadowColor: '#002451',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 9,
-  },
   logoWrap: {
-    paddingTop: 36,
+    paddingTop: 16,
     paddingHorizontal: 20,
+    paddingBottom: 8,
     alignItems: 'center',
   },
   logoText: {
@@ -144,8 +148,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   heroBackground: {
-    marginTop: 120,
-    marginHorizontal: 22,
+    width: '100%',
     borderRadius: 25,
     overflow: 'hidden',
     borderWidth: 1,

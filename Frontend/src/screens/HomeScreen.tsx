@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import NewHomeScreen from './NewHomeScreen';
@@ -87,17 +87,28 @@ export default function HomeScreen({ token, onLogout, userRole }: HomeScreenProp
     );
   }
 
+  const patientHome =
+    activeTab === 'home' && userRole !== 'PROFESSIONAL';
+
   return (
-    <SafeAreaView edges={['left', 'right']} style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar barStyle="light-content" />
+    <SafeAreaView
+      edges={['left', 'right']}
+      style={{
+        flex: 1,
+        backgroundColor: patientHome ? '#FFFFFF' : colors.background,
+      }}
+    >
+      <StatusBar barStyle={patientHome ? 'dark-content' : 'light-content'} />
       
       {activeTab === 'home' && userRole !== 'PROFESSIONAL' && (
-        <NewHomeScreen 
-          token={token} 
-          onLogout={onLogout}
-          onShowNotifications={handleShowNotifications}
-          unreadNotificationsCount={unreadCounts.notifications}
-        />
+        <View style={{ flex: 1 }}>
+          <NewHomeScreen
+            token={token}
+            onLogout={onLogout}
+            onShowNotifications={handleShowNotifications}
+            unreadNotificationsCount={unreadCounts.notifications}
+          />
+        </View>
       )}
       {activeTab === 'appointments' && (
         <MyAppointments 
